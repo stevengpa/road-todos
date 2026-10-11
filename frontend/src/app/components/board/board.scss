@@ -204,6 +204,7 @@
 }
 
 .col-cards {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -214,11 +215,22 @@
 }
 
 .empty {
-  margin: auto 0;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
   text-align: center;
   color: var(--text-faint);
   font-size: 12.5px;
-  padding: 16px 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+/* When dragging over an empty column the placeholder is appended to the list,
+   so we hide the empty hint to avoid overlap. */
+.col-cards.cdk-drop-list-receiving > .empty {
+  opacity: 0;
 }
 
 /* -- card ------------------------------------------------------------------ */
