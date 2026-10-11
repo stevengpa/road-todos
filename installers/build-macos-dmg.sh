@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+wails build -clean -platform darwin/universal
+
+STAGE="$(mktemp -d)"
+cp -R build/bin/road-todo.app "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
+
+OUT="installers/Roadmap-1.0.0-macos-universal.dmg"
+rm -f "$OUT"
+diskutil image create from "$STAGE" "$OUT" --volumeName Roadmap --format UDZO
+rm -rf "$STAGE"
+
+echo "Created $OUT"
