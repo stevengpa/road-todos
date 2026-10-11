@@ -211,13 +211,60 @@
       </div>
       </div>
       } @else {
-        <div class="table-wrap" cdkDropListGroup>
+        <div
+          class="table-wrap"
+          cdkDropListGroup
+          cdkDropList
+          cdkDropListOrientation="vertical"
+          [cdkDropListData]="columnIds()"
+          (cdkDropListDropped)="onColumnDrop($event)"
+        >
           @for (col of columns(); track col.id) {
-            <div class="stage-table" [style]="{ '--col-color': col.color }">
+            <div
+              class="stage-table"
+              [style]="{ '--col-color': col.color }"
+              cdkDrag
+              [cdkDragData]="col"
+            >
               <header class="st-head">
-                <span class="st-dot" [style.background]="col.color"></span>
-                <span class="st-name">{{ col.name }}</span>
-                <span class="st-count">{{ state.cardsForColumn(col.id).length }}</span>
+                <button
+                  class="col-grip"
+                  cdkDragHandle
+                  [attr.aria-label]="'Reorder stage ' + col.name"
+                  title="Drag to reorder stage"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                    <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" />
+                  </svg>
+                </button>
+                @if (editingColumn() === col.id) {
+                  <input
+                    class="col-name-input"
+                    [(ngModel)]="columnDraft"
+                    (keydown.enter)="commitRename(col)"
+                    (keydown.escape)="cancelRename()"
+                    (blur)="commitRename(col)"
+                    autofocus
+                  />
+                } @else {
+                  <button class="col-name" (click)="startRename(col)" title="Rename stage">
+                    <span class="col-dot"></span>
+                    <span class="col-text">{{ col.name }}</span>
+                    <span class="col-count">{{ state.cardsForColumn(col.id).length }}</span>
+                  </button>
+                  <div class="col-actions">
+                    @if (confirmColumn() === col.id) {
+                      <button class="mini danger" (click)="deleteColumn(col)">Delete?</button>
+                      <button class="mini" (click)="cancelDeleteColumn()">No</button>
+                    } @else {
+                      <button class="mini icon" (click)="askDeleteColumn(col)" title="Delete stage" aria-label="Delete stage">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                          <path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14" />
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                }
               </header>
 
               <div class="st-grid st-head-row">
@@ -311,6 +358,27 @@
               </footer>
             </div>
           }
+
+          <div class="add-column-wrap tbl">
+            @if (addingColumn()) {
+              <input
+                class="col-name-input new"
+                [(ngModel)]="newColumnName"
+                placeholder="Stage name"
+                (keydown.enter)="commitNewColumn()"
+                (keydown.escape)="cancelNewColumn()"
+                (blur)="commitNewColumn()"
+                autofocus
+              />
+            } @else {
+              <button class="add-column" (click)="startNewColumn()">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add stage
+              </button>
+            }
+          </div>
         </div>
       }
   </div>

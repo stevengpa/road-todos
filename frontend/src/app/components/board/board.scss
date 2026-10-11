@@ -441,31 +441,11 @@
 .st-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 11px 14px 9px;
+  gap: 6px;
+  padding: 9px 12px 8px;
 }
-
-.st-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 4px;
-  flex: none;
-}
-
-.st-name {
-  font-weight: 750;
-  font-size: 13.5px;
-}
-
-.st-count {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-faint);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 1px 8px;
+.stage-table:hover .col-actions {
+  opacity: 1;
 }
 
 .st-head-row,
@@ -604,6 +584,19 @@
   transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
 }
 
+/* A whole stage lifted out keeps its shape, like the kanban columns. */
+.stage-table.cdk-drag-preview {
+  border-radius: 16px;
+  opacity: 0.92;
+}
+.stage-table.cdk-drag-placeholder {
+  border-radius: 16px;
+  border-width: 1.5px;
+}
+.table-wrap.cdk-drop-list-dragging .stage-table:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
 /* Responsive: drop columns as the window narrows so rows always fit. */
 @media (max-width: 1250px) {
   .stage-table {
@@ -665,6 +658,11 @@
 .add-column-wrap {
   width: 300px;
   flex: none;
+}
+
+.add-column-wrap.tbl {
+  width: auto;
+  margin-top: 0;
 }
 
 .add-column {
