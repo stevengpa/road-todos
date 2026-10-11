@@ -419,7 +419,7 @@
 .table-wrap {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto;
   padding: 4px 24px 24px;
   display: flex;
   flex-direction: column;
@@ -427,7 +427,8 @@
 }
 
 .stage-table {
-  --st-cols: 38px minmax(220px, 1.4fr) 96px 116px 132px minmax(140px, 1fr);
+  --st-cols: 38px minmax(220px, 1.5fr) 96px 118px 132px minmax(150px, 1fr);
+  flex: none;
   display: flex;
   flex-direction: column;
   background: var(--panel);
@@ -601,6 +602,42 @@
 }
 .st-body.cdk-drop-list-dragging .strow:not(.cdk-drag-placeholder) {
   transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Responsive: drop columns as the window narrows so rows always fit. */
+@media (max-width: 1250px) {
+  .stage-table {
+    --st-cols: 38px minmax(200px, 1.6fr) 96px 118px minmax(150px, 1fr);
+  }
+  .st-head-row .g-remind,
+  .strow .g-remind {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .stage-table {
+    --st-cols: 38px minmax(180px, 1.8fr) minmax(150px, 1fr);
+  }
+  .st-head-row .g-prio,
+  .strow .g-prio,
+  .st-head-row .g-due,
+  .strow .g-due {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .stage-table {
+    --st-cols: 32px minmax(140px, 1fr);
+  }
+  .st-head-row .g-tags,
+  .strow .g-tags {
+    display: none;
+  }
+  .g-task small {
+    white-space: normal;
+  }
 }
 
 /* -- add buttons ----------------------------------------------------------- */
