@@ -23,7 +23,15 @@
           [class.active]="b.id === state.currentBoardId()"
           (click)="state.selectBoard(b.id)"
         >
-          <span class="bi-dot" [style.background]="b.color"></span>
+          <input
+            class="bi-colorpick"
+            type="color"
+            [value]="b.color"
+            (change)="changeBoardColor(b, $event)"
+            (click)="$event.stopPropagation()"
+            title="Change board color"
+            aria-label="Change board color"
+          />
           <span class="bi-name">{{ b.name }}</span>
           <span class="bi-count">{{ countFor(b.id) }}</span>
         </button>

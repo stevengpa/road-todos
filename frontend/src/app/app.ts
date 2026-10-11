@@ -107,6 +107,13 @@ export class App implements OnInit, OnDestroy {
     this.closeBoardDialog();
   }
 
+  protected async changeBoardColor(board: BoardModel, event: Event): Promise<void> {
+    const value = (event.target as HTMLInputElement).value;
+    if (value && value !== board.color) {
+      await this.state.updateBoard({ id: board.id, name: board.name, description: board.description, color: value });
+    }
+  }
+
   protected async onDeleteBoard(id: number): Promise<void> {
     await this.state.deleteBoard(id);
     this.closeBoardDialog();

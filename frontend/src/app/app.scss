@@ -102,11 +102,29 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.bi-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
+.bi-colorpick {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
   flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: 0.15s;
+}
+.bi-colorpick::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.bi-colorpick::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+.bi-colorpick:hover {
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 .bi-name {
   flex: 1;

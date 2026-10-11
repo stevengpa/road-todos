@@ -3,7 +3,14 @@
     <header class="board-header">
       <div class="bh-left">
         <h1 class="bh-title">
-          <span class="bh-dot" [style.background]="board.color"></span>
+          <input
+            class="bh-colorpick"
+            type="color"
+            [value]="board.color"
+            (change)="changeBoardColor(board, $event)"
+            title="Change board color"
+            aria-label="Change board color"
+          />
           {{ board.name }}
         </h1>
         @if (board.description) {

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { StateService } from '../../state.service';
 import { CardDialog } from '../card-dialog/card-dialog';
-import { Card, CardInput, Column, View, parseTags, priorityMeta } from '../../models';
+import { Board as BoardModel, Card, CardInput, Column, View, parseTags, priorityMeta } from '../../models';
 
 @Component({
   selector: 'app-board',
@@ -87,6 +87,13 @@ export class Board {
     const value = (event.target as HTMLInputElement).value;
     if (value && value !== column.color) {
       await this.state.updateColumn({ id: column.id, boardId: column.boardId, name: column.name, color: value });
+    }
+  }
+
+  protected async changeBoardColor(board: BoardModel, event: Event): Promise<void> {
+    const value = (event.target as HTMLInputElement).value;
+    if (value && value !== board.color) {
+      await this.state.updateBoard({ id: board.id, name: board.name, description: board.description, color: value });
     }
   }
 
