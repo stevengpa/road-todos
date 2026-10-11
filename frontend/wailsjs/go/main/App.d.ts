@@ -20,6 +20,10 @@ export function GetSnapshot():Promise<models.Snapshot>;
 
 export function MoveCard(arg1:number,arg2:number,arg3:number):Promise<void>;
 
+export function OpenDBFolder():Promise<void>;
+
+export function PendingReminders():Promise<Array<models.Reminder>>;
+
 export function ReorderCards(arg1:number,arg2:Array<number>):Promise<void>;
 
 export function ReorderColumns(arg1:number,arg2:Array<number>):Promise<void>;

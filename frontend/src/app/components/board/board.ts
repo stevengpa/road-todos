@@ -1,4 +1,4 @@
-import { Component, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import {
   CdkDragDrop,
   DragDropModule,
@@ -16,6 +16,7 @@ import { Card, CardInput, Column, parseTags, priorityMeta } from '../../models';
   imports: [DragDropModule, FormsModule, CardDialog],
   templateUrl: './board.html',
   styleUrl: './board.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Board {
   protected readonly state = inject(StateService);
@@ -168,6 +169,17 @@ export class Board {
     const date = new Date(`${value}T00:00:00`);
     if (isNaN(date.getTime())) return value;
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  protected remindLabel(value: string): string {
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
 
   protected isOverdue(card: Card): boolean {

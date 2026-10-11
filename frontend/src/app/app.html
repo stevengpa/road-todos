@@ -37,13 +37,12 @@
       New board
     </button>
 
-    <div class="side-foot" [title]="state.dbPath()">
+    <button class="side-foot" (click)="openDBFolder()" [title]="'Open data folder\n' + state.dbPath()">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <ellipse cx="12" cy="5" rx="8" ry="3" />
-        <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
       </svg>
-      <span>Stored locally · SQLite</span>
-    </div>
+      <span>Open data folder</span>
+    </button>
   </aside>
 
   <main class="main">
@@ -81,6 +80,37 @@
         }
       </button>
     </header>
+
+    @if (state.reminders().length) {
+      <section class="reminders" aria-label="Reminders">
+        <div class="reminders-head">
+          <span class="reminders-title">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+            </svg>
+            {{ state.reminders().length }}
+            {{ state.reminders().length === 1 ? 'reminder' : 'reminders' }}
+          </span>
+          <button class="link-btn" (click)="state.dismissAllReminders()">Dismiss all</button>
+        </div>
+        <ul class="reminder-list">
+          @for (r of state.reminders(); track r.kind + '-' + r.id) {
+            <li class="reminder-item" [class.overdue]="r.overdue">
+              <button class="ri-main" (click)="viewReminder(r)" title="Go to board">
+                <span class="ri-title">{{ r.title }}</span>
+                <span class="ri-meta">{{ reminderLabel(r) }}</span>
+              </button>
+              <button class="ri-dismiss" (click)="state.dismissReminder(r)" aria-label="Dismiss" title="Dismiss">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
 
     @if (state.loading()) {
       <div class="center-state">

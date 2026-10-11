@@ -234,6 +234,33 @@ select {
   line-height: 1.5;
 }
 
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.input-row .input {
+  flex: 1;
+  min-width: 0;
+}
+.clear-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--text-faint);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  transition: 0.15s;
+}
+.clear-btn:hover {
+  color: var(--text);
+  background: var(--hover);
+  border-color: var(--border-strong);
+}
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;

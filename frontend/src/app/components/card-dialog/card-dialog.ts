@@ -38,6 +38,7 @@ export class CardDialog implements OnInit {
   protected description = '';
   protected priority: Priority = 'medium';
   protected dueDate = '';
+  protected remindAt = '';
   protected tags = '';
   protected columnId = 0;
 
@@ -48,6 +49,7 @@ export class CardDialog implements OnInit {
       this.description = card.description;
       this.priority = (card.priority as Priority) ?? 'medium';
       this.dueDate = card.dueDate;
+      this.remindAt = card.remindAt;
       this.tags = card.tags;
       this.columnId = card.columnId;
     } else {
@@ -57,6 +59,14 @@ export class CardDialog implements OnInit {
 
   protected setPriority(p: Priority): void {
     this.priority = p;
+  }
+
+  protected clearDueDate(): void {
+    this.dueDate = '';
+  }
+
+  protected clearReminder(): void {
+    this.remindAt = '';
   }
 
   protected submit(): void {
@@ -74,6 +84,7 @@ export class CardDialog implements OnInit {
       description: this.description.trim(),
       priority: this.priority,
       dueDate: this.dueDate,
+      remindAt: this.remindAt,
       tags,
     });
   }

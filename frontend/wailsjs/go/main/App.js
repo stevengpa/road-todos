@@ -38,6 +38,14 @@ export function MoveCard(arg1, arg2, arg3) {
   return window['go']['main']['App']['MoveCard'](arg1, arg2, arg3);
 }
 
+export function OpenDBFolder() {
+  return window['go']['main']['App']['OpenDBFolder']();
+}
+
+export function PendingReminders() {
+  return window['go']['main']['App']['PendingReminders']();
+}
+
 export function ReorderCards(arg1, arg2) {
   return window['go']['main']['App']['ReorderCards'](arg1, arg2);
 }

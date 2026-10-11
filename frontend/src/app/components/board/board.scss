@@ -232,12 +232,10 @@
   cursor: grab;
   box-shadow: var(--shadow-sm);
   transition:
-    transform 0.15s,
     border-color 0.15s,
     box-shadow 0.15s;
 }
 .card:hover {
-  transform: translateY(-1px);
   border-color: var(--border-strong);
   box-shadow: var(--shadow);
 }
@@ -332,6 +330,18 @@
   background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
+.remind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 .card.done {
   opacity: 0.66;
 }
@@ -399,6 +409,9 @@
   box-shadow: var(--shadow);
   padding: 12px 12px 12px 15px;
   width: 274px;
+  pointer-events: none;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .cdk-drag-placeholder {
@@ -414,4 +427,11 @@
 
 .col-cards.cdk-drop-list-dragging .card:not(.cdk-drag-placeholder) {
   transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* While a card is being dragged, keep the moving items on their own compositor
+   layer and avoid hover repaints that otherwise stutter the drag on macOS. */
+.col-cards.cdk-drop-list-dragging .card:hover {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
 }

@@ -8,6 +8,7 @@ import {
   CardInput,
   Column,
   ColumnInput,
+  Reminder,
   Snapshot,
 } from './models';
 
@@ -17,6 +18,10 @@ export interface BoardStat {
   progress: number;
 }
 
+// Shared identity for empty columns so the drag & drop directive sees a stable
+// array reference between change-detection runs.
+const EMPTY_CARDS: Card[] = [];
+
 @Injectable({ providedIn: 'root' })
 export class StateService {
   readonly boards = signal<Board[]>([]);
@@ -24,6 +29,7 @@ export class StateService {
   readonly cards = signal<Card[]>([]);
   readonly currentBoardId = signal<number | null>(null);
   readonly search = signal('');
+  readonly reminders = signal<Reminder[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly dbPath = signal('');
@@ -63,10 +69,37 @@ export class StateService {
     return map;
   });
 
+  // Cards grouped by column (respecting the active search) so the template can
+  // look them up in O(1) instead of filtering the full list on every cycle.
+  private readonly cardsByColumn = computed<Map<number, Card[]>>(() => {
+    const q = this.search().trim().toLowerCase();
+    const map = new Map<number, Card[]>();
+    for (const c of this.cards()) {
+      if (q && !this.matches(c, q)) continue;
+      const list = map.get(c.columnId);
+      if (list) {
+        list.push(c);
+      } else {
+        map.set(c.columnId, [c]);
+      }
+    }
+    for (const list of map.values()) list.sort((a, b) => a.position - b.position);
+    return map;
+  });
+
+  private matches(card: Card, query: string): boolean {
+    return (
+      card.title.toLowerCase().includes(query) ||
+      card.description.toLowerCase().includes(query) ||
+      card.tags.toLowerCase().includes(query)
+    );
+  }
+
   async init(): Promise<void> {
     try {
       this.dbPath.set(await App.DBPath());
       await this.reload();
+      await this.refreshReminders();
       const boards = this.boards();
       if (boards.length && this.currentBoardId() === null) {
         this.currentBoardId.set(boards[0].id);
@@ -79,18 +112,42 @@ export class StateService {
   }
 
   cardsForColumn(columnId: number): Card[] {
-    const q = this.search().trim().toLowerCase();
-    return this.cards()
-      .filter((c) => c.columnId === columnId)
-      .filter((c) => {
-        if (!q) return true;
-        return (
-          c.title.toLowerCase().includes(q) ||
-          c.description.toLowerCase().includes(q) ||
-          c.tags.toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => a.position - b.position);
+    return this.cardsByColumn().get(columnId) ?? EMPTY_CARDS;
+  }
+
+  // -------------------------------------------------------------------------
+  // Reminders
+  // -------------------------------------------------------------------------
+
+  private readonly dismissedReminders = new Set<string>();
+
+  private reminderKey(r: Reminder): string {
+    return `${r.kind}-${r.id}`;
+  }
+
+  async refreshReminders(): Promise<void> {
+    try {
+      const all = (await App.PendingReminders()) ?? [];
+      this.reminders.set(all.filter((r) => !this.dismissedReminders.has(this.reminderKey(r))));
+    } catch {
+      // Reminders are best-effort; ignore transient failures.
+    }
+  }
+
+  dismissReminder(reminder: Reminder): void {
+    this.dismissedReminders.add(this.reminderKey(reminder));
+    this.reminders.update((list) =>
+      list.filter((r) => !(r.id === reminder.id && r.kind === reminder.kind)),
+    );
+  }
+
+  dismissAllReminders(): void {
+    for (const r of this.reminders()) this.dismissedReminders.add(this.reminderKey(r));
+    this.reminders.set([]);
+  }
+
+  openDBFolder(): Promise<void | null> {
+    return this.run(() => App.OpenDBFolder());
   }
 
   selectBoard(id: number): void {
@@ -167,24 +224,31 @@ export class StateService {
     const card = await this.run(() => App.CreateCard(input));
     if (!card) return;
     this.cards.update((list) => [...list, card]);
+    void this.refreshReminders();
   }
 
   async updateCard(input: CardInput): Promise<void> {
     const card = await this.run(() => App.UpdateCard(input));
     if (!card) return;
     this.cards.update((list) => list.map((c) => (c.id === card.id ? card : c)));
+    // Re-arm reminders for this card in case its dates changed.
+    this.dismissedReminders.delete(`due-${card.id}`);
+    this.dismissedReminders.delete(`reminder-${card.id}`);
+    void this.refreshReminders();
   }
 
   async deleteCard(id: number): Promise<void> {
     const ok = await this.run(() => App.DeleteCard(id));
     if (ok === null) return;
     this.cards.update((list) => list.filter((c) => c.id !== id));
+    void this.refreshReminders();
   }
 
   async toggleComplete(id: number): Promise<void> {
     const card = await this.run(() => App.ToggleComplete(id));
     if (!card) return;
     this.cards.update((list) => list.map((c) => (c.id === card.id ? card : c)));
+    void this.refreshReminders();
   }
 
   async moveCard(cardId: number, columnId: number, ids: number[]): Promise<void> {

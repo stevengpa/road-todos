@@ -255,7 +255,7 @@ func (s *Store) ReorderColumns(boardID int64, ids []int64) error {
 
 func (s *Store) listCards(boardID int64) ([]models.Card, error) {
 	query := `SELECT id, board_id, column_id, title, description, priority, completed,
-	                 due_date, tags, position, created_at, updated_at FROM cards`
+	                 due_date, remind_at, tags, position, created_at, updated_at FROM cards`
 	args := []any{}
 	if boardID > 0 {
 		query += ` WHERE board_id = ?`
@@ -274,7 +274,7 @@ func (s *Store) listCards(boardID int64) ([]models.Card, error) {
 		var c models.Card
 		var completed int
 		if err := rows.Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Priority,
-			&completed, &c.DueDate, &c.Tags, &c.Position, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Position, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
 		c.Completed = completed == 1
@@ -288,9 +288,9 @@ func (s *Store) getCard(id int64) (models.Card, error) {
 	var completed int
 	err := s.db.QueryRow(
 		`SELECT id, board_id, column_id, title, description, priority, completed,
-		        due_date, tags, position, created_at, updated_at FROM cards WHERE id = ?`, id).
+		        due_date, remind_at, tags, position, created_at, updated_at FROM cards WHERE id = ?`, id).
 		Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Priority,
-			&completed, &c.DueDate, &c.Tags, &c.Position, &c.CreatedAt, &c.UpdatedAt)
+			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Position, &c.CreatedAt, &c.UpdatedAt)
 	c.Completed = completed == 1
 	return c, err
 }
@@ -314,9 +314,9 @@ func (s *Store) CreateCard(in models.CardInput) (models.Card, error) {
 	ts := now()
 	res, err := s.db.Exec(
 		`INSERT INTO cards (board_id, column_id, title, description, priority, completed,
-		                    due_date, tags, position, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
-		in.BoardID, in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.Tags, pos, ts, ts)
+		                    due_date, remind_at, tags, position, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+		in.BoardID, in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags, pos, ts, ts)
 	if err != nil {
 		return models.Card{}, err
 	}
@@ -340,8 +340,8 @@ func (s *Store) UpdateCard(in models.CardInput) (models.Card, error) {
 	}
 	_, err := s.db.Exec(
 		`UPDATE cards SET column_id = ?, title = ?, description = ?, priority = ?,
-		                  due_date = ?, tags = ?, updated_at = ? WHERE id = ?`,
-		in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.Tags, now(), in.ID)
+		                  due_date = ?, remind_at = ?, tags = ?, updated_at = ? WHERE id = ?`,
+		in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags, now(), in.ID)
 	if err != nil {
 		return models.Card{}, err
 	}
@@ -364,6 +364,137 @@ func (s *Store) ToggleComplete(id int64) (models.Card, error) {
 	}
 	return s.getCard(id)
 }
+
+// ---------------------------------------------------------------------------
+// Reminders
+// ---------------------------------------------------------------------------
+
+// reminderTimeFormat matches the value produced by an <input type="datetime-local">.
+const reminderTimeFormat = "2006-01-02T15:04"
+
+// PendingReminders returns every open card that currently warrants attention,
+// either because an explicit reminder time has passed or because its due date
+// is today or earlier.
+func (s *Store) PendingReminders() ([]models.Reminder, error) {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	nowStamp := now.Format(reminderTimeFormat)
+
+	rows, err := s.db.Query(
+		`SELECT id, board_id, column_id, title, due_date, remind_at FROM cards
+		 WHERE completed = 0 AND (remind_at != '' OR due_date != '')`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []models.Reminder{}
+	for rows.Next() {
+		var (
+			id                       int64
+			boardID, columnID        int64
+			title, dueDate, remindAt string
+		)
+		if err := rows.Scan(&id, &boardID, &columnID, &title, &dueDate, &remindAt); err != nil {
+			return nil, err
+		}
+		r, ok := reminderFor(id, boardID, columnID, title, dueDate, remindAt, today, nowStamp)
+		if ok {
+			out = append(out, r)
+		}
+	}
+	return out, rows.Err()
+}
+
+// RemindersToFire returns reminders that have not yet been announced to the
+// user. It is used by the notification loop so each reminder fires once.
+func (s *Store) RemindersToFire() ([]models.Reminder, error) {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	nowStamp := now.Format(reminderTimeFormat)
+
+	rows, err := s.db.Query(
+		`SELECT id, board_id, column_id, title, due_date, remind_at, remind_notified, due_notified
+		 FROM cards WHERE completed = 0 AND (remind_at != '' OR due_date != '')`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	custom := []models.Reminder{}
+	due := []models.Reminder{}
+	for rows.Next() {
+		var (
+			id                          int64
+			boardID, columnID           int64
+			title, dueDate, remindAt    string
+			remindNotified, dueNotified string
+		)
+		if err := rows.Scan(&id, &boardID, &columnID, &title, &dueDate, &remindAt,
+			&remindNotified, &dueNotified); err != nil {
+			return nil, err
+		}
+
+		customReached := remindAt != "" && remindAt <= nowStamp && remindNotified != remindAt
+		if customReached {
+			custom = append(custom, reminderFor2(id, boardID, columnID, title, dueDate, remindAt,
+				models.ReminderKindCustom, today))
+			continue
+		}
+
+		dueReached := dueDate != "" && dueDate <= today && dueNotified != dueDate
+		if dueReached {
+			due = append(due, reminderFor2(id, boardID, columnID, title, dueDate, remindAt,
+				models.ReminderKindDue, today))
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return append(custom, due...), nil
+}
+
+// MarkReminded records that a reminder for a card has been announced so it is
+// not surfaced again for the same due date or reminder time.
+func (s *Store) MarkReminded(cardID int64, kind, value string) error {
+	if kind == models.ReminderKindCustom {
+		// A custom reminder also satisfies any due-date alert for the same card.
+		_, err := s.db.Exec(
+			`UPDATE cards SET remind_notified = ?,
+			        due_notified = CASE WHEN due_date != '' THEN due_date ELSE due_notified END
+			 WHERE id = ?`, value, cardID)
+		return err
+	}
+	_, err := s.db.Exec(`UPDATE cards SET due_notified = ? WHERE id = ?`, value, cardID)
+	return err
+}
+
+func reminderFor(id, boardID, columnID int64, title, dueDate, remindAt, today, nowStamp string) (models.Reminder, bool) {
+	if remindAt != "" && remindAt <= nowStamp {
+		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindCustom, today), true
+	}
+	if dueDate != "" && dueDate <= today {
+		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindDue, today), true
+	}
+	return models.Reminder{}, false
+}
+
+func reminderFor2(id, boardID, columnID int64, title, dueDate, remindAt, kind, today string) models.Reminder {
+	return models.Reminder{
+		ID:       id,
+		BoardID:  boardID,
+		ColumnID: columnID,
+		Title:    title,
+		Kind:     kind,
+		DueDate:  dueDate,
+		RemindAt: remindAt,
+		Overdue:  dueDate != "" && dueDate < today,
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Move / reorder
+// ---------------------------------------------------------------------------
 
 // MoveCard moves a card into columnID at the given index and normalises order.
 func (s *Store) MoveCard(cardID, columnID int64, position int) error {

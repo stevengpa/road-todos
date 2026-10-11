@@ -78,24 +78,76 @@ CREATE TABLE IF NOT EXISTS columns (
 );
 
 CREATE TABLE IF NOT EXISTS cards (
-	id          INTEGER PRIMARY KEY AUTOINCREMENT,
-	board_id    INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
-	column_id   INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
-	title       TEXT NOT NULL,
-	description TEXT NOT NULL DEFAULT '',
-	priority    TEXT NOT NULL DEFAULT 'medium',
-	completed   INTEGER NOT NULL DEFAULT 0,
-	due_date    TEXT NOT NULL DEFAULT '',
-	tags        TEXT NOT NULL DEFAULT '',
-	position    INTEGER NOT NULL DEFAULT 0,
-	created_at  TEXT NOT NULL,
-	updated_at  TEXT NOT NULL
+	id              INTEGER PRIMARY KEY AUTOINCREMENT,
+	board_id        INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+	column_id       INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
+	title           TEXT NOT NULL,
+	description     TEXT NOT NULL DEFAULT '',
+	priority        TEXT NOT NULL DEFAULT 'medium',
+	completed       INTEGER NOT NULL DEFAULT 0,
+	due_date        TEXT NOT NULL DEFAULT '',
+	remind_at       TEXT NOT NULL DEFAULT '',
+	remind_notified TEXT NOT NULL DEFAULT '',
+	due_notified    TEXT NOT NULL DEFAULT '',
+	tags            TEXT NOT NULL DEFAULT '',
+	position        INTEGER NOT NULL DEFAULT 0,
+	created_at      TEXT NOT NULL,
+	updated_at      TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_columns_board ON columns(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column ON cards(column_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_board ON cards(board_id);
 `
-	_, err := sqlDB.Exec(schema)
-	return err
+	if _, err := sqlDB.Exec(schema); err != nil {
+		return err
+	}
+
+	// Incremental migrations so databases created by earlier versions keep
+	// working when new columns are introduced.
+	columns := []struct{ table, column, ddl string }{
+		{"cards", "remind_at", `ALTER TABLE cards ADD COLUMN remind_at TEXT NOT NULL DEFAULT ''`},
+		{"cards", "remind_notified", `ALTER TABLE cards ADD COLUMN remind_notified TEXT NOT NULL DEFAULT ''`},
+		{"cards", "due_notified", `ALTER TABLE cards ADD COLUMN due_notified TEXT NOT NULL DEFAULT ''`},
+	}
+	for _, c := range columns {
+		exists, err := columnExists(sqlDB, c.table, c.column)
+		if err != nil {
+			return err
+		}
+		if exists {
+			continue
+		}
+		if _, err := sqlDB.Exec(c.ddl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// columnExists reports whether a table already has the given column.
+func columnExists(sqlDB *sql.DB, table, column string) (bool, error) {
+	rows, err := sqlDB.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			cid       int
+			name      string
+			ctype     string
+			notNull   int
+			dfltValue sql.NullString
+			pk        int
+		)
+		if err := rows.Scan(&cid, &name, &ctype, &notNull, &dfltValue, &pk); err != nil {
+			return false, err
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }

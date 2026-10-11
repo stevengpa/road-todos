@@ -3,6 +3,15 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"os/exec"
+	"path/filepath"
+	goruntime "runtime"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"road-todo/internal/db"
 	"road-todo/internal/models"
@@ -11,9 +20,12 @@ import (
 
 // App is the struct exposed to the Angular frontend through Wails bindings.
 type App struct {
-	ctx   context.Context
-	db    *sql.DB
-	store *store.Store
+	ctx         context.Context
+	db          *sql.DB
+	store       *store.Store
+	done        chan struct{}
+	closeOnce   sync.Once
+	notifyReady atomic.Bool
 }
 
 // NewApp opens the local SQLite database and prepares the workspace.
@@ -27,16 +39,31 @@ func NewApp() (*App, error) {
 		_ = sqlDB.Close()
 		return nil, err
 	}
-	return &App{db: sqlDB, store: st}, nil
+	return &App{db: sqlDB, store: st, done: make(chan struct{})}, nil
 }
 
 // startup is called by Wails once the app is ready.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// Initialise notifications, but never block startup on the user granting
+	// permission (macOS can wait up to three minutes for a response).
+	if wruntime.IsNotificationAvailable(ctx) {
+		if err := wruntime.InitializeNotifications(ctx); err == nil {
+			a.notifyReady.Store(true)
+			go func() { _, _ = wruntime.RequestNotificationAuthorization(ctx) }()
+		}
+	}
+
+	go a.reminderLoop()
 }
 
 // shutdown releases the database connection.
 func (a *App) shutdown(ctx context.Context) {
+	a.closeOnce.Do(func() { close(a.done) })
+	if a.notifyReady.Load() {
+		wruntime.CleanupNotifications(ctx)
+	}
 	if a.db != nil {
 		_ = a.db.Close()
 	}
@@ -49,6 +76,100 @@ func (a *App) DBPath() string {
 		return ""
 	}
 	return p
+}
+
+// OpenDBFolder reveals the folder that contains the SQLite database in the
+// platform's file manager.
+func (a *App) OpenDBFolder() error {
+	p, err := db.Path()
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(p)
+
+	var cmd *exec.Cmd
+	switch goruntime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	default:
+		cmd = exec.Command("xdg-open", dir)
+	}
+	return cmd.Start()
+}
+
+// ---------------------------------------------------------------------------
+// Reminders
+// ---------------------------------------------------------------------------
+
+// PendingReminders returns every card that currently warrants the user's
+// attention so the UI can render its reminders panel.
+func (a *App) PendingReminders() ([]models.Reminder, error) {
+	return a.store.PendingReminders()
+}
+
+// reminderLoop periodically sweeps for reminders that have come due and
+// announces them once via an OS notification and a frontend event.
+func (a *App) reminderLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	select {
+	case <-a.done:
+		return
+	case <-time.After(4 * time.Second):
+	}
+
+	a.fireReminders()
+	for {
+		select {
+		case <-a.done:
+			return
+		case <-ticker.C:
+			a.fireReminders()
+		}
+	}
+}
+
+func (a *App) fireReminders() {
+	items, err := a.store.RemindersToFire()
+	if err != nil {
+		return
+	}
+	// Record and surface every reminder first so a slow OS notification can
+	// never prevent the state from being updated.
+	for _, r := range items {
+		_ = a.store.MarkReminded(r.ID, r.Kind, r.Value())
+		if a.ctx != nil {
+			wruntime.EventsEmit(a.ctx, "reminder:fired", r)
+		}
+	}
+	for _, r := range items {
+		a.sendNotification(r)
+	}
+}
+
+func (a *App) sendNotification(r models.Reminder) {
+	if a.ctx == nil || !a.notifyReady.Load() {
+		return
+	}
+	_ = wruntime.SendNotification(a.ctx, wruntime.NotificationOptions{
+		ID:    fmt.Sprintf("road-todo-%d-%s", r.ID, r.Kind),
+		Title: r.Title,
+		Body:  reminderBody(r),
+	})
+}
+
+func reminderBody(r models.Reminder) string {
+	switch {
+	case r.Kind == models.ReminderKindCustom:
+		return "Reminder"
+	case r.Overdue:
+		return "Overdue · due " + r.DueDate
+	default:
+		return "Due today"
+	}
 }
 
 // ---------------------------------------------------------------------------

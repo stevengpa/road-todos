@@ -49,6 +49,7 @@ export namespace models {
 	    priority: string;
 	    completed: boolean;
 	    dueDate: string;
+	    remindAt: string;
 	    tags: string;
 	    position: number;
 	    createdAt: string;
@@ -68,6 +69,7 @@ export namespace models {
 	        this.priority = source["priority"];
 	        this.completed = source["completed"];
 	        this.dueDate = source["dueDate"];
+	        this.remindAt = source["remindAt"];
 	        this.tags = source["tags"];
 	        this.position = source["position"];
 	        this.createdAt = source["createdAt"];
@@ -82,6 +84,7 @@ export namespace models {
 	    description: string;
 	    priority: string;
 	    dueDate: string;
+	    remindAt: string;
 	    tags: string;
 	
 	    static createFrom(source: any = {}) {
@@ -97,6 +100,7 @@ export namespace models {
 	        this.description = source["description"];
 	        this.priority = source["priority"];
 	        this.dueDate = source["dueDate"];
+	        this.remindAt = source["remindAt"];
 	        this.tags = source["tags"];
 	    }
 	}
@@ -138,6 +142,32 @@ export namespace models {
 	        this.boardId = source["boardId"];
 	        this.name = source["name"];
 	        this.color = source["color"];
+	    }
+	}
+	export class Reminder {
+	    id: number;
+	    boardId: number;
+	    columnId: number;
+	    title: string;
+	    kind: string;
+	    dueDate: string;
+	    remindAt: string;
+	    overdue: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Reminder(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.boardId = source["boardId"];
+	        this.columnId = source["columnId"];
+	        this.title = source["title"];
+	        this.kind = source["kind"];
+	        this.dueDate = source["dueDate"];
+	        this.remindAt = source["remindAt"];
+	        this.overdue = source["overdue"];
 	    }
 	}
 	export class Snapshot {

@@ -154,11 +154,20 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  width: 100%;
   margin-top: 12px;
-  padding: 8px 10px 0;
+  padding: 10px;
   border-top: 1px solid var(--border);
+  border-radius: 0;
   color: var(--text-faint);
   font-size: 11.5px;
+  font-weight: 600;
+  text-align: left;
+  transition: 0.15s;
+}
+.side-foot:hover {
+  color: var(--text);
+  background: var(--hover);
 }
 
 /* -- main ------------------------------------------------------------------ */
@@ -238,6 +247,105 @@
 .theme-toggle:hover {
   color: var(--text);
   border-color: var(--border-strong);
+}
+
+/* -- reminders ------------------------------------------------------------- */
+
+.reminders {
+  flex: none;
+  margin: 2px 24px 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: var(--accent-soft);
+}
+
+.reminders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reminders-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.link-btn {
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 12px;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.reminder-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+.reminder-item.overdue {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.ri-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-align: left;
+}
+.ri-title {
+  font-weight: 650;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ri-meta {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.reminder-item.overdue .ri-meta {
+  color: var(--danger);
+}
+
+.ri-dismiss {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--text-faint);
+  transition: 0.15s;
+}
+.ri-dismiss:hover {
+  color: var(--text);
+  background: var(--hover);
 }
 
 /* -- states ---------------------------------------------------------------- */

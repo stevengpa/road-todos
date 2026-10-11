@@ -7,6 +7,7 @@ export type BoardInput = models.BoardInput;
 export type ColumnInput = models.ColumnInput;
 export type CardInput = models.CardInput;
 export type Snapshot = models.Snapshot;
+export type Reminder = models.Reminder;
 
 export type Priority = 'low' | 'medium' | 'high';
 
