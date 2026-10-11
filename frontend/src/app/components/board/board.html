@@ -211,87 +211,97 @@
       </div>
       </div>
       } @else {
-        <div class="table-wrap">
-          <table class="tasks-table">
-            <thead>
-              <tr>
-                <th class="tt-status"></th>
-                <th>Task</th>
-                <th>Stage</th>
-                <th>Priority</th>
-                <th>Due</th>
-                <th>Reminder</th>
-                <th class="tt-tags">Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (card of tableCards(); track card.id) {
-                <tr class="tt-row" [class.done]="card.completed" (click)="openCard(card)">
-                  <td class="tt-status">
-                    <button
-                      class="check"
-                      [class.on]="card.completed"
-                      (click)="toggle(card, $event)"
-                      [title]="card.completed ? 'Mark as open' : 'Mark as done'"
-                    >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 6 9 17l-5-5" />
-                      </svg>
-                    </button>
-                  </td>
-                  <td class="tt-title">
-                    {{ card.title }}
-                    @if (card.description) {
-                      <small>{{ card.description }}</small>
-                    }
-                  </td>
-                  <td>
-                    <span class="stage-chip" [style.background]="columnColor(card.columnId)">
-                      <span class="stage-dot" [style.background]="columnColor(card.columnId)"></span>
-                      {{ columnName(card.columnId) }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="prio-chip">
-                      <span class="prio-dot" [style.background]="priority(card.priority).color"></span>
-                      {{ priority(card.priority).label }}
-                    </span>
-                  </td>
-                  <td>
-                    @if (card.dueDate) {
-                      <span class="due" [class.overdue]="isOverdue(card)">
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                          <rect x="3" y="5" width="18" height="16" rx="2" />
-                          <path d="M3 9h18M8 3v4M16 3v4" />
+        <div class="table-wrap" cdkDropListGroup>
+          @for (col of columns(); track col.id) {
+            <div class="stage-table" [style]="{ '--col-color': col.color }">
+              <header class="st-head">
+                <span class="st-dot" [style.background]="col.color"></span>
+                <span class="st-name">{{ col.name }}</span>
+                <span class="st-count">{{ state.cardsForColumn(col.id).length }}</span>
+              </header>
+
+              <div class="st-grid st-head-row">
+                <span class="g-status"></span>
+                <span class="g-task">Task</span>
+                <span class="g-prio">Priority</span>
+                <span class="g-due">Due</span>
+                <span class="g-remind">Reminder</span>
+                <span class="g-tags">Tags</span>
+              </div>
+
+              <div
+                class="st-grid st-body"
+                cdkDropList
+                [cdkDropListData]="state.cardsForColumn(col.id)"
+                (cdkDropListDropped)="onDrop($event, col)"
+              >
+                @for (card of state.cardsForColumn(col.id); track card.id) {
+                  <div
+                    class="strow"
+                    [class.done]="card.completed"
+                    cdkDrag
+                    [cdkDragData]="card"
+                    [cdkDragDisabled]="isFiltering()"
+                    (click)="openCard(card)"
+                  >
+                    <span class="g-status">
+                      <button
+                        class="check"
+                        [class.on]="card.completed"
+                        (click)="toggle(card, $event)"
+                        [title]="card.completed ? 'Mark as open' : 'Mark as done'"
+                      >
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 6 9 17l-5-5" />
                         </svg>
-                        {{ dueLabel(card.dueDate) }}
+                      </button>
+                    </span>
+                    <span class="g-task">
+                      {{ card.title }}
+                      @if (card.description) {
+                        <small>{{ card.description }}</small>
+                      }
+                    </span>
+                    <span class="g-prio">
+                      <span class="prio-chip">
+                        <span class="prio-dot" [style.background]="priority(card.priority).color"></span>
+                        {{ priority(card.priority).label }}
                       </span>
-                    }
-                  </td>
-                  <td>
-                    @if (card.remindAt) {
-                      <span class="remind">
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                          <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-                        </svg>
-                        {{ remindLabel(card.remindAt) }}
-                      </span>
-                    }
-                  </td>
-                  <td class="tt-tags">
-                    @for (t of tags(card.tags); track t) {
-                      <span class="tag">{{ t }}</span>
-                    }
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="7" class="tt-empty">No tasks yet</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+                    </span>
+                    <span class="g-due">
+                      @if (card.dueDate) {
+                        <span class="due" [class.overdue]="isOverdue(card)">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <rect x="3" y="5" width="18" height="16" rx="2" />
+                            <path d="M3 9h18M8 3v4M16 3v4" />
+                          </svg>
+                          {{ dueLabel(card.dueDate) }}
+                        </span>
+                      }
+                    </span>
+                    <span class="g-remind">
+                      @if (card.remindAt) {
+                        <span class="remind">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                          </svg>
+                          {{ remindLabel(card.remindAt) }}
+                        </span>
+                      }
+                    </span>
+                    <span class="g-tags">
+                      @for (t of tags(card.tags); track t) {
+                        <span class="tag">{{ t }}</span>
+                      }
+                    </span>
+                  </div>
+                } @empty {
+                  <div class="st-empty">No tasks in this stage</div>
+                }
+              </div>
+            </div>
+          }
         </div>
       }
   </div>

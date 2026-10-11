@@ -419,68 +419,109 @@
 .table-wrap {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
   padding: 4px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.tasks-table {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: separate;
-  border-spacing: 0;
+.stage-table {
+  --st-cols: 38px minmax(220px, 1.4fr) 96px 116px 132px minmax(140px, 1fr);
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  font-size: 13px;
 }
 
-.tasks-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  text-align: left;
+.st-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px 9px;
+}
+
+.st-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 4px;
+  flex: none;
+}
+
+.st-name {
+  font-weight: 750;
+  font-size: 13.5px;
+}
+
+.st-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.st-head-row,
+.strow {
+  display: grid;
+  grid-template-columns: var(--st-cols);
+  align-items: center;
+  padding: 9px 14px;
+}
+
+.st-head-row {
+  background: var(--panel-2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
-  background: var(--panel-2);
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
 }
 
-.tasks-table tbody td {
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-.tasks-table tbody tr:last-child td {
-  border-bottom: none;
+.st-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 48px;
 }
 
-.tt-row {
-  cursor: pointer;
+.strow {
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
   transition: background 0.12s;
 }
-.tt-row:hover {
+.strow:last-child {
+  border-bottom: none;
+}
+.strow:hover {
   background: var(--hover);
 }
-
-.tt-status {
-  width: 38px;
+.strow:active {
+  cursor: grabbing;
 }
 
-.tt-title {
+.g-status {
+  display: flex;
+  align-items: center;
+}
+
+.g-task {
+  min-width: 0;
   font-weight: 650;
   color: var(--text);
 }
-.tt-title small {
+.g-task small {
   display: block;
   margin-top: 2px;
-  max-width: 360px;
+  max-width: 380px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-dim);
@@ -488,32 +529,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tt-row.done .tt-title {
+.strow.done .g-task {
   text-decoration: line-through;
   color: var(--text-faint);
 }
-.tt-row.done .tt-title small {
+.strow.done .g-task small {
   color: var(--text-faint);
-}
-
-.stage-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 650;
-  color: var(--text);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.stage-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
 }
 
 .prio-chip {
@@ -532,14 +553,26 @@
   flex: none;
 }
 
-.tt-tags .tag {
+.g-tags .tag {
   margin-right: 4px;
 }
 
-.tt-empty {
+.st-empty {
+  padding: 22px 14px;
   text-align: center;
   color: var(--text-faint);
-  padding: 28px 14px !important;
+  font-size: 12.5px;
+}
+
+/* Row drag states mirror the kanban cards. */
+.st-body .cdk-drag-preview {
+  border-radius: 10px;
+}
+.st-body .cdk-drag-placeholder {
+  border-radius: 10px;
+}
+.st-body.cdk-drop-list-dragging .strow:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
 }
 
 /* -- add buttons ----------------------------------------------------------- */
