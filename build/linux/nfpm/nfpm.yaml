@@ -1,0 +1,35 @@
+# nfpm configuration for building a Fedora/RHEL .rpm (and .deb) package.
+#
+#   wails build -tags webkit2_41
+#   nfpm package -f build/linux/nfpm/nfpm.yaml -p rpm
+#
+# Docs: https://nfpm.goreleaser.com/configuration/
+name: road-todo
+arch: amd64
+platform: linux
+version: 1.0.0
+section: default
+priority: optional
+maintainer: stevegpa <steven.gpa.git@gmail.com>
+description: |
+  A local-first roadmap and todo board for the desktop.
+  Built with Go, Wails and Angular. All data is stored locally in SQLite.
+vendor: road-todo
+license: MIT
+
+depends:
+  - gtk3
+  - webkit2gtk4.1
+
+contents:
+  - src: build/bin/road-todo
+    dst: /usr/bin/road-todo
+    file_info:
+      mode: 0755
+  - src: build/appicon.png
+    dst: /usr/share/icons/hicolor/512x512/apps/road-todo.png
+  - src: build/linux/road-todo.desktop
+    dst: /usr/share/applications/road-todo.desktop
+
+rpm:
+  group: Applications/Productivity

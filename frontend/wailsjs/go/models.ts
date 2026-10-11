@@ -1,0 +1,179 @@
+export namespace models {
+	
+	export class Board {
+	    id: number;
+	    name: string;
+	    description: string;
+	    color: string;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Board(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.color = source["color"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class BoardInput {
+	    id: number;
+	    name: string;
+	    description: string;
+	    color: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BoardInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.color = source["color"];
+	    }
+	}
+	export class Card {
+	    id: number;
+	    boardId: number;
+	    columnId: number;
+	    title: string;
+	    description: string;
+	    priority: string;
+	    completed: boolean;
+	    dueDate: string;
+	    tags: string;
+	    position: number;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Card(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.boardId = source["boardId"];
+	        this.columnId = source["columnId"];
+	        this.title = source["title"];
+	        this.description = source["description"];
+	        this.priority = source["priority"];
+	        this.completed = source["completed"];
+	        this.dueDate = source["dueDate"];
+	        this.tags = source["tags"];
+	        this.position = source["position"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class CardInput {
+	    id: number;
+	    boardId: number;
+	    columnId: number;
+	    title: string;
+	    description: string;
+	    priority: string;
+	    dueDate: string;
+	    tags: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CardInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.boardId = source["boardId"];
+	        this.columnId = source["columnId"];
+	        this.title = source["title"];
+	        this.description = source["description"];
+	        this.priority = source["priority"];
+	        this.dueDate = source["dueDate"];
+	        this.tags = source["tags"];
+	    }
+	}
+	export class Column {
+	    id: number;
+	    boardId: number;
+	    name: string;
+	    color: string;
+	    position: number;
+	    createdAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Column(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.boardId = source["boardId"];
+	        this.name = source["name"];
+	        this.color = source["color"];
+	        this.position = source["position"];
+	        this.createdAt = source["createdAt"];
+	    }
+	}
+	export class ColumnInput {
+	    id: number;
+	    boardId: number;
+	    name: string;
+	    color: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ColumnInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.boardId = source["boardId"];
+	        this.name = source["name"];
+	        this.color = source["color"];
+	    }
+	}
+	export class Snapshot {
+	    boards: Board[];
+	    columns: Column[];
+	    cards: Card[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Snapshot(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.boards = this.convertValues(source["boards"], Board);
+	        this.columns = this.convertValues(source["columns"], Column);
+	        this.cards = this.convertValues(source["cards"], Card);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+

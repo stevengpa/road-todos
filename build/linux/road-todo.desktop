@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Roadmap
+GenericName=Roadmap & Todo Board
+Comment=A local-first roadmap and todo board
+Exec=road-todo
+Icon=road-todo
+Terminal=false
+Categories=Office;ProjectManagement;Utility;
+Keywords=todo;tasks;roadmap;kanban;project;
+StartupNotify=true

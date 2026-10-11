@@ -1,0 +1,99 @@
+<div class="overlay" (click)="close()">
+  <div class="dialog" (click)="stop($event)">
+    <header class="dialog-head">
+      <div class="dialog-title">
+        <span class="dot" [style.background]="meta(priority).color"></span>
+        {{ editing() ? 'Edit task' : 'New task' }}
+      </div>
+      <button class="icon-btn" (click)="close()" aria-label="Close" title="Close">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="dialog-body">
+      <label class="field">
+        <span class="label">Title</span>
+        <input
+          class="input"
+          type="text"
+          placeholder="What needs to be done?"
+          [(ngModel)]="title"
+          (keydown.enter)="submit()"
+          autofocus
+        />
+      </label>
+
+      <label class="field">
+        <span class="label">Description</span>
+        <textarea
+          class="input textarea"
+          rows="3"
+          placeholder="Add more detail…"
+          [(ngModel)]="description"
+        ></textarea>
+      </label>
+
+      <div class="grid-2">
+        <label class="field">
+          <span class="label">Stage</span>
+          <select class="input" [(ngModel)]="columnId">
+            @for (col of columns(); track col.id) {
+              <option [ngValue]="col.id">{{ col.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="label">Due date</span>
+          <input class="input" type="date" [(ngModel)]="dueDate" />
+        </label>
+      </div>
+
+      <div class="field">
+        <span class="label">Priority</span>
+        <div class="segmented">
+          @for (p of priorities; track p) {
+            <button
+              type="button"
+              class="segment"
+              [class.active]="priority === p"
+              [style.--seg-color]="meta(p).color"
+              (click)="setPriority(p)"
+            >
+              {{ meta(p).label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="label">Tags <span class="hint">comma separated</span></span>
+        <input class="input" type="text" placeholder="design, api, docs" [(ngModel)]="tags" />
+      </label>
+    </div>
+
+    <footer class="dialog-foot">
+      @if (editing()) {
+        @if (confirming()) {
+          <div class="confirm">
+            <span>Delete this task?</span>
+            <button class="btn danger" (click)="confirmDelete()">Delete</button>
+            <button class="btn ghost" (click)="cancelDelete()">Keep</button>
+          </div>
+        } @else {
+          <button class="btn danger ghost" (click)="askDelete()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14" />
+            </svg>
+            Delete
+          </button>
+        }
+      }
+      <span class="spacer"></span>
+      <button class="btn ghost" (click)="close()">Cancel</button>
+      <button class="btn primary" (click)="submit()">{{ editing() ? 'Save changes' : 'Create task' }}</button>
+    </footer>
+  </div>
+</div>

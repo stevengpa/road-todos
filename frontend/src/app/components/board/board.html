@@ -1,0 +1,167 @@
+@if (state.currentBoard(); as board) {
+  <div class="board">
+    <header class="board-header">
+      <div class="bh-left">
+        <h1 class="bh-title">
+          <span class="bh-dot" [style.background]="board.color"></span>
+          {{ board.name }}
+        </h1>
+        @if (board.description) {
+          <p class="bh-desc">{{ board.description }}</p>
+        }
+        <div class="bh-stats">
+          <span>{{ stats().total }} {{ stats().total === 1 ? 'task' : 'tasks' }}</span>
+          <span class="sep">•</span>
+          <span>{{ stats().done }} done</span>
+          <div class="progress"><div class="progress-fill" [style.width.%]="stats().progress"></div></div>
+          <span class="pct">{{ stats().progress }}%</span>
+        </div>
+      </div>
+      <div class="bh-right">
+        <button class="btn ghost" (click)="edit.emit()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          Edit
+        </button>
+        <button class="btn primary" (click)="openNewTask()" [disabled]="!columns().length">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          New task
+        </button>
+      </div>
+    </header>
+
+    <div class="board-scroll" cdkDropListGroup>
+      @for (col of columns(); track col.id) {
+        <section class="column" [style]="{ '--col-color': col.color }">
+          <header class="col-head">
+            @if (editingColumn() === col.id) {
+              <input
+                class="col-name-input"
+                [(ngModel)]="columnDraft"
+                (keydown.enter)="commitRename(col)"
+                (keydown.escape)="cancelRename()"
+                (blur)="commitRename(col)"
+                autofocus
+              />
+            } @else {
+              <button class="col-name" (click)="startRename(col)" title="Rename stage">
+                <span class="col-dot"></span>
+                <span class="col-text">{{ col.name }}</span>
+                <span class="col-count">{{ state.cardsForColumn(col.id).length }}</span>
+              </button>
+              <div class="col-actions">
+                @if (confirmColumn() === col.id) {
+                  <button class="mini danger" (click)="deleteColumn(col)">Delete?</button>
+                  <button class="mini" (click)="cancelDeleteColumn()">No</button>
+                } @else {
+                  <button class="mini icon" (click)="askDeleteColumn(col)" title="Delete stage" aria-label="Delete stage">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            }
+          </header>
+
+          <div
+            class="col-cards"
+            cdkDropList
+            [cdkDropListData]="state.cardsForColumn(col.id)"
+            (cdkDropListDropped)="onDrop($event, col)"
+          >
+            @for (card of state.cardsForColumn(col.id); track card.id) {
+              <article
+                class="card"
+                [class.done]="card.completed"
+                cdkDrag
+                [cdkDragData]="card"
+                [cdkDragDisabled]="isFiltering()"
+                (click)="openCard(card)"
+              >
+                <span class="card-accent" [style.background]="priority(card.priority).color"></span>
+                <div class="card-top">
+                  <h4 class="card-title">{{ card.title }}</h4>
+                  <button
+                    class="check"
+                    [class.on]="card.completed"
+                    (click)="toggle(card, $event)"
+                    [title]="card.completed ? 'Mark as open' : 'Mark as done'"
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </button>
+                </div>
+                @if (card.description) {
+                  <p class="card-desc">{{ card.description }}</p>
+                }
+                @if (card.tags || card.dueDate) {
+                  <div class="card-foot">
+                    @for (t of tags(card.tags); track t) {
+                      <span class="tag">{{ t }}</span>
+                    }
+                    @if (card.dueDate) {
+                      <span class="due" [class.overdue]="isOverdue(card)">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                          <rect x="3" y="5" width="18" height="16" rx="2" />
+                          <path d="M3 9h18M8 3v4M16 3v4" />
+                        </svg>
+                        {{ dueLabel(card.dueDate) }}
+                      </span>
+                    }
+                  </div>
+                }
+              </article>
+            } @empty {
+              <p class="empty">Drop tasks here</p>
+            }
+          </div>
+
+          <button class="add-card" (click)="openNewCard(col)">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add task
+          </button>
+        </section>
+      }
+
+      <div class="add-column-wrap">
+        @if (addingColumn()) {
+          <input
+            class="col-name-input new"
+            [(ngModel)]="newColumnName"
+            placeholder="Stage name"
+            (keydown.enter)="commitNewColumn()"
+            (keydown.escape)="cancelNewColumn()"
+            (blur)="commitNewColumn()"
+            autofocus
+          />
+        } @else {
+          <button class="add-column" (click)="startNewColumn()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add stage
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (dialogOpen()) {
+    <app-card-dialog
+      [card]="editingCard()"
+      [boardId]="board.id"
+      [columns]="columns()"
+      [defaultColumnId]="dialogColumnId()"
+      (save)="onSaveCard($event)"
+      (remove)="onDeleteCard($event)"
+      (closed)="closeDialog()"
+    />
+  }
+}

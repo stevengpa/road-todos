@@ -1,0 +1,119 @@
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+          <path d="M9 14l2 2 4-4" />
+        </svg>
+      </span>
+      <div class="brand-text">
+        <strong>Roadmap</strong>
+        <small>Local workspace</small>
+      </div>
+    </div>
+
+    <div class="side-label">Boards</div>
+    <nav class="board-list">
+      @for (b of state.boards(); track b.id) {
+        <button
+          class="board-item"
+          [class.active]="b.id === state.currentBoardId()"
+          (click)="state.selectBoard(b.id)"
+        >
+          <span class="bi-dot" [style.background]="b.color"></span>
+          <span class="bi-name">{{ b.name }}</span>
+          <span class="bi-count">{{ countFor(b.id) }}</span>
+        </button>
+      } @empty {
+        <p class="side-empty">No boards yet</p>
+      }
+    </nav>
+
+    <button class="new-board" (click)="openNewBoard()">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      New board
+    </button>
+
+    <div class="side-foot" [title]="state.dbPath()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="12" cy="5" rx="8" ry="3" />
+        <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+      </svg>
+      <span>Stored locally · SQLite</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.2-3.2" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search tasks…"
+          [ngModel]="state.search()"
+          (ngModelChange)="state.search.set($event)"
+        />
+        @if (state.search()) {
+          <button class="clear" (click)="state.search.set('')" aria-label="Clear search">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        }
+      </div>
+      <span class="spacer"></span>
+      <button class="theme-toggle" (click)="toggleTheme()" [title]="theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        @if (theme() === 'dark') {
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5" />
+            <path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+          </svg>
+        }
+      </button>
+    </header>
+
+    @if (state.loading()) {
+      <div class="center-state">
+        <div class="spinner"></div>
+        <p>Loading your workspace…</p>
+      </div>
+    } @else if (state.boards().length === 0) {
+      <div class="center-state">
+        <span class="empty-illustration">
+          <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="18" rx="2" />
+            <rect x="14" y="3" width="7" height="11" rx="2" />
+          </svg>
+        </span>
+        <h2>Start your roadmap</h2>
+        <p>Create your first board to organize tasks into stages.</p>
+        <button class="btn primary" (click)="openNewBoard()">Create a board</button>
+      </div>
+    } @else {
+      <app-board (edit)="openEditBoard()" />
+    }
+  </main>
+</div>
+
+@if (boardDialogOpen()) {
+  <app-board-dialog
+    [board]="editingBoard()"
+    (save)="onSaveBoard($event)"
+    (remove)="onDeleteBoard($event)"
+    (closed)="closeBoardDialog()"
+  />
+}
+
+@if (state.error(); as err) {
+  <div class="toast">{{ err }}</div>
+}

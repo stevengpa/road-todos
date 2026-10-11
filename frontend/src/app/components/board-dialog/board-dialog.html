@@ -1,0 +1,58 @@
+<div class="overlay" (click)="close()">
+  <div class="dialog" (click)="stop($event)">
+    <header class="dialog-head">
+      <div class="dialog-title">
+        <span class="dot" [style.background]="color"></span>
+        {{ editing() ? 'Board settings' : 'New board' }}
+      </div>
+      <button class="icon-btn" (click)="close()" aria-label="Close" title="Close">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="dialog-body">
+      <label class="field">
+        <span class="label">Name</span>
+        <input class="input" type="text" placeholder="e.g. Product Roadmap" [(ngModel)]="name" (keydown.enter)="submit()" autofocus />
+      </label>
+
+      <label class="field">
+        <span class="label">Description</span>
+        <textarea class="input textarea" rows="2" placeholder="What is this board about?" [(ngModel)]="description"></textarea>
+      </label>
+
+      <div class="field">
+        <span class="label">Color</span>
+        <div class="swatches">
+          @for (c of palette; track c) {
+            <button type="button" class="swatch" [class.active]="color === c" [style.background]="c" (click)="setColor(c)"></button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <footer class="dialog-foot">
+      @if (editing()) {
+        @if (confirming()) {
+          <div class="confirm">
+            <span>Delete board &amp; tasks?</span>
+            <button class="btn danger" (click)="confirmDelete()">Delete</button>
+            <button class="btn ghost" (click)="cancelDelete()">Keep</button>
+          </div>
+        } @else {
+          <button class="btn danger ghost" (click)="askDelete()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14" />
+            </svg>
+            Delete
+          </button>
+        }
+      }
+      <span class="spacer"></span>
+      <button class="btn ghost" (click)="close()">Cancel</button>
+      <button class="btn primary" (click)="submit()">{{ editing() ? 'Save changes' : 'Create board' }}</button>
+    </footer>
+  </div>
+</div>
