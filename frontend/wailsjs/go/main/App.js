@@ -30,6 +30,10 @@ export function DeleteColumn(arg1) {
   return window['go']['main']['App']['DeleteColumn'](arg1);
 }
 
+export function GetSettings() {
+  return window['go']['main']['App']['GetSettings']();
+}
+
 export function GetSnapshot() {
   return window['go']['main']['App']['GetSnapshot']();
 }
@@ -52,6 +56,10 @@ export function ReorderCards(arg1, arg2) {
 
 export function ReorderColumns(arg1, arg2) {
   return window['go']['main']['App']['ReorderColumns'](arg1, arg2);
+}
+
+export function SetSetting(arg1, arg2) {
+  return window['go']['main']['App']['SetSetting'](arg1, arg2);
 }
 
 export function ToggleComplete(arg1) {

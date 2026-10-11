@@ -8,6 +8,9 @@ export type ColumnInput = models.ColumnInput;
 export type CardInput = models.CardInput;
 export type Snapshot = models.Snapshot;
 export type Reminder = models.Reminder;
+export type Settings = models.Settings;
+
+export type Theme = 'dark' | 'light';
 
 export type Priority = 'low' | 'medium' | 'high';
 

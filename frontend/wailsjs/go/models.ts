@@ -170,6 +170,20 @@ export namespace models {
 	        this.overdue = source["overdue"];
 	    }
 	}
+	export class Settings {
+	    theme: string;
+	    showCompleted: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.theme = source["theme"];
+	        this.showCompleted = source["showCompleted"];
+	    }
+	}
 	export class Snapshot {
 	    boards: Board[];
 	    columns: Column[];

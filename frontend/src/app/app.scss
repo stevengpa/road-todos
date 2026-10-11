@@ -248,6 +248,11 @@
   color: var(--text);
   border-color: var(--border-strong);
 }
+.theme-toggle.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
 
 /* -- reminders ------------------------------------------------------------- */
 

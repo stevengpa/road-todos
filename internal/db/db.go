@@ -95,6 +95,11 @@ CREATE TABLE IF NOT EXISTS cards (
 	updated_at      TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+	key   TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_columns_board ON columns(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column ON cards(column_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_board ON cards(board_id);

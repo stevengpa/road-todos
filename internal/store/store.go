@@ -366,6 +366,46 @@ func (s *Store) ToggleComplete(id int64) (models.Card, error) {
 }
 
 // ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+// Settings returns the user's persisted UI preferences, falling back to
+// sensible defaults for any key that has never been stored.
+func (s *Store) Settings() (models.Settings, error) {
+	out := models.Settings{Theme: "dark", ShowCompleted: false}
+
+	rows, err := s.db.Query(`SELECT key, value FROM settings`)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			return out, err
+		}
+		switch key {
+		case models.SettingTheme:
+			if value == "light" || value == "dark" {
+				out.Theme = value
+			}
+		case models.SettingShowCompleted:
+			out.ShowCompleted = value == "1" || value == "true"
+		}
+	}
+	return out, rows.Err()
+}
+
+// SetSetting upserts a single preference key.
+func (s *Store) SetSetting(key, value string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO settings (key, value) VALUES (?, ?)
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value)
+	return err
+}
+
+// ---------------------------------------------------------------------------
 // Reminders
 // ---------------------------------------------------------------------------
 

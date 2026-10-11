@@ -128,19 +128,34 @@ export class Board {
   protected onDrop(event: CdkDragDrop<Card[]>, column: Column): void {
     const card = event.item.data as Card;
 
-    // The drop lists are bound to arrays owned by the signal store, so we must
-    // never mutate them here. Build the desired order and let the store update
-    // the single source of truth (which re-derives every column).
+    // The drop lists show a filtered view (search, hidden completed tasks) but
+    // the store keeps the true ordering. We stitch the visible reorder back into
+    // the full column list so hidden cards keep their slots and never collide.
+    const visible = event.container.data.map((c) => c.id);
+
     if (event.previousContainer === event.container) {
-      const ids = event.container.data.map((c) => c.id);
-      moveItemInArray(ids, event.previousIndex, event.currentIndex);
-      void this.state.reorderCards(column.id, ids);
+      const reordered = [...visible];
+      moveItemInArray(reordered, event.previousIndex, event.currentIndex);
+
+      const full = this.state.allCardsForColumn(column.id).map((c) => c.id);
+      const visibleSet = new Set(visible);
+      const merged: number[] = [];
+      let vi = 0;
+      for (const id of full) {
+        merged.push(visibleSet.has(id) ? reordered[vi++] : id);
+      }
+      void this.state.reorderCards(column.id, merged);
       return;
     }
 
-    const ids = event.container.data.map((c) => c.id);
-    ids.splice(event.currentIndex, 0, card.id);
-    void this.state.moveCard(card.id, column.id, ids);
+    const full = this.state.allCardsForColumn(column.id).map((c) => c.id);
+    // Drop before whichever card currently occupies the target index; a drop at
+    // the end appends after every visible card.
+    const anchor = event.currentIndex < visible.length ? visible[event.currentIndex] : null;
+    const insertAt = anchor === null ? full.length : full.indexOf(anchor);
+    const merged = [...full];
+    merged.splice(insertAt < 0 ? full.length : insertAt, 0, card.id);
+    void this.state.moveCard(card.id, column.id, merged);
   }
 
   protected async toggle(card: Card, event: Event): Promise<void> {

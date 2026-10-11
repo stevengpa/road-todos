@@ -33,7 +33,8 @@ func newTestStore(t *testing.T) *Store {
 		column_id INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
 		title TEXT, description TEXT, priority TEXT, completed INTEGER, due_date TEXT, tags TEXT,
 		remind_at TEXT NOT NULL DEFAULT '', remind_notified TEXT NOT NULL DEFAULT '', due_notified TEXT NOT NULL DEFAULT '',
-		position INTEGER, created_at TEXT, updated_at TEXT);`); err != nil {
+		position INTEGER, created_at TEXT, updated_at TEXT);
+	CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);`); err != nil {
 		t.Fatalf("schema: %v", err)
 	}
 	return New(sqlDB)
@@ -145,6 +146,52 @@ func TestMoveCardNoDuplicates(t *testing.T) {
 	}
 	if len(snap.Cards) != len(cards) {
 		t.Fatalf("expected %d cards, got %d", len(cards), len(snap.Cards))
+	}
+}
+
+func TestSettings(t *testing.T) {
+	s := newTestStore(t)
+
+	// Defaults before anything is stored.
+	got, err := s.Settings()
+	if err != nil {
+		t.Fatalf("settings: %v", err)
+	}
+	if got.Theme != "dark" || got.ShowCompleted {
+		t.Fatalf("unexpected defaults: %+v", got)
+	}
+
+	if err := s.SetSetting(models.SettingTheme, "light"); err != nil {
+		t.Fatalf("set theme: %v", err)
+	}
+	if err := s.SetSetting(models.SettingShowCompleted, "1"); err != nil {
+		t.Fatalf("set show completed: %v", err)
+	}
+
+	got, err = s.Settings()
+	if err != nil {
+		t.Fatalf("settings: %v", err)
+	}
+	if got.Theme != "light" || !got.ShowCompleted {
+		t.Fatalf("settings not persisted: %+v", got)
+	}
+
+	// Upsert overwrites the previous value instead of duplicating the row.
+	if err := s.SetSetting(models.SettingTheme, "dark"); err != nil {
+		t.Fatalf("update theme: %v", err)
+	}
+	got, _ = s.Settings()
+	if got.Theme != "dark" {
+		t.Fatalf("theme not updated: %+v", got)
+	}
+
+	// Unknown values fall back to the default theme.
+	if err := s.SetSetting(models.SettingTheme, "nonsense"); err != nil {
+		t.Fatalf("set bad theme: %v", err)
+	}
+	got, _ = s.Settings()
+	if got.Theme != "dark" {
+		t.Fatalf("expected fallback theme, got %+v", got)
 	}
 }
 

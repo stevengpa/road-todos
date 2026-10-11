@@ -181,6 +181,16 @@ func (a *App) GetSnapshot() (models.Snapshot, error) {
 	return a.store.Snapshot()
 }
 
+// GetSettings returns the user's persisted UI preferences.
+func (a *App) GetSettings() (models.Settings, error) {
+	return a.store.Settings()
+}
+
+// SetSetting upserts a single UI preference so it survives restarts.
+func (a *App) SetSetting(key, value string) error {
+	return a.store.SetSetting(key, value)
+}
+
 // ---------------------------------------------------------------------------
 // Boards
 // ---------------------------------------------------------------------------

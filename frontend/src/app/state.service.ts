@@ -9,7 +9,9 @@ import {
   Column,
   ColumnInput,
   Reminder,
+  Settings,
   Snapshot,
+  Theme,
 } from './models';
 
 export interface BoardStat {
@@ -33,6 +35,8 @@ export class StateService {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly dbPath = signal('');
+  readonly theme = signal<Theme>('dark');
+  readonly showCompleted = signal(false);
 
   readonly currentBoard = computed<Board | null>(() => {
     const id = this.currentBoardId();
@@ -73,8 +77,10 @@ export class StateService {
   // look them up in O(1) instead of filtering the full list on every cycle.
   private readonly cardsByColumn = computed<Map<number, Card[]>>(() => {
     const q = this.search().trim().toLowerCase();
+    const showDone = this.showCompleted();
     const map = new Map<number, Card[]>();
     for (const c of this.cards()) {
+      if (!showDone && c.completed) continue;
       if (q && !this.matches(c, q)) continue;
       const list = map.get(c.columnId);
       if (list) {
@@ -98,6 +104,7 @@ export class StateService {
   async init(): Promise<void> {
     try {
       this.dbPath.set(await App.DBPath());
+      await this.loadSettings();
       await this.reload();
       await this.refreshReminders();
       const boards = this.boards();
@@ -113,6 +120,36 @@ export class StateService {
 
   cardsForColumn(columnId: number): Card[] {
     return this.cardsByColumn().get(columnId) ?? EMPTY_CARDS;
+  }
+
+  // Every card in a column in stored order, regardless of the search or
+  // "show completed" filters. Drag & drop needs the true ordering so hidden
+  // cards keep their slots when the visible ones are rearranged.
+  allCardsForColumn(columnId: number): Card[] {
+    return this.cards()
+      .filter((c) => c.columnId === columnId)
+      .sort((a, b) => a.position - b.position);
+  }
+
+  // -------------------------------------------------------------------------
+  // Settings
+  // -------------------------------------------------------------------------
+
+  private async loadSettings(): Promise<void> {
+    const settings: Settings = await App.GetSettings();
+    this.theme.set(settings.theme === 'light' ? 'light' : 'dark');
+    this.showCompleted.set(!!settings.showCompleted);
+  }
+
+  async setTheme(theme: Theme): Promise<void> {
+    this.theme.set(theme);
+    await this.runVoid(() => App.SetSetting('theme', theme));
+  }
+
+  async toggleShowCompleted(): Promise<void> {
+    const next = !this.showCompleted();
+    this.showCompleted.set(next);
+    await this.runVoid(() => App.SetSetting('show_completed', next ? '1' : '0'));
   }
 
   // -------------------------------------------------------------------------

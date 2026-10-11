@@ -1,0 +1,38 @@
+<div class="calendar">
+  <div class="cal-head">
+    <button class="cal-nav" (click)="prev()" aria-label="Previous month" title="Previous month">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+    </button>
+    <button class="cal-title" (click)="goToday()" title="Jump to today">{{ monthLabel() }}</button>
+    <button class="cal-nav" (click)="next()" aria-label="Next month" title="Next month">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="cal-grid cal-weekdays">
+    @for (w of weekdays; track $index) {
+      <span class="cal-wd">{{ w }}</span>
+    }
+  </div>
+
+  <div class="cal-grid cal-days">
+    @for (d of days(); track d.key) {
+      <span
+        class="cal-day"
+        [class.muted]="!d.inMonth"
+        [class.today]="d.isToday"
+        [class.has-due]="d.dueCount > 0"
+        [title]="d.dueCount ? (d.dueCount + (d.dueCount === 1 ? ' task due' : ' tasks due')) : ''"
+      >
+        {{ d.day }}
+        @if (d.dueCount) {
+          <span class="cal-dot"></span>
+        }
+      </span>
+    }
+  </div>
+</div>

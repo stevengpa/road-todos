@@ -99,3 +99,15 @@ type Snapshot struct {
 	Columns []Column `json:"columns"`
 	Cards   []Card   `json:"cards"`
 }
+
+// Settings holds the user's persisted UI preferences.
+type Settings struct {
+	Theme         string `json:"theme"`
+	ShowCompleted bool   `json:"showCompleted"`
+}
+
+// Setting keys persisted in the settings table.
+const (
+	SettingTheme         = "theme"
+	SettingShowCompleted = "show_completed"
+)

@@ -14,11 +14,12 @@ import * as Runtime from '../../wailsjs/runtime/runtime';
 import { StateService } from './state.service';
 import { Board } from './components/board/board';
 import { BoardDialog } from './components/board-dialog/board-dialog';
+import { Calendar } from './components/calendar/calendar';
 import { BoardInput, Board as BoardModel, Reminder } from './models';
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, Board, BoardDialog],
+  imports: [FormsModule, Board, BoardDialog, Calendar],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,7 +27,6 @@ import { BoardInput, Board as BoardModel, Reminder } from './models';
 export class App implements OnInit, OnDestroy {
   protected readonly state = inject(StateService);
   private readonly zone = inject(NgZone);
-  protected readonly theme = signal<'dark' | 'light'>('dark');
 
   protected readonly boardDialogOpen = signal(false);
   protected readonly editingBoard = signal<BoardModel | null>(null);
@@ -36,7 +36,7 @@ export class App implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      document.documentElement.dataset['theme'] = this.theme();
+      document.documentElement.dataset['theme'] = this.state.theme();
     });
   }
 
@@ -76,7 +76,11 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected toggleTheme(): void {
-    this.theme.update((t) => (t === 'dark' ? 'light' : 'dark'));
+    void this.state.setTheme(this.state.theme() === 'dark' ? 'light' : 'dark');
+  }
+
+  protected toggleCompleted(): void {
+    void this.state.toggleShowCompleted();
   }
 
   protected openNewBoard(): void {
