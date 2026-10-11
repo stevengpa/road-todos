@@ -405,6 +405,37 @@ func (s *Store) SetSetting(key, value string) error {
 	return err
 }
 
+// BoardViews returns the stored layout preference for every board.
+func (s *Store) BoardViews() ([]models.BoardView, error) {
+	rows, err := s.db.Query(`SELECT board_id, view FROM board_settings ORDER BY board_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []models.BoardView{}
+	for rows.Next() {
+		var b models.BoardView
+		if err := rows.Scan(&b.BoardID, &b.View); err != nil {
+			return nil, err
+		}
+		out = append(out, b)
+	}
+	return out, rows.Err()
+}
+
+// SetBoardView remembers the layout a board should open with. The row is
+// removed automatically if the board is deleted.
+func (s *Store) SetBoardView(boardID int64, view string) error {
+	if view != "table" {
+		view = "kanban"
+	}
+	_, err := s.db.Exec(
+		`INSERT INTO board_settings (board_id, view) VALUES (?, ?)
+		 ON CONFLICT(board_id) DO UPDATE SET view = excluded.view`, boardID, view)
+	return err
+}
+
 // ---------------------------------------------------------------------------
 // Reminders
 // ---------------------------------------------------------------------------

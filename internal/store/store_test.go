@@ -34,7 +34,10 @@ func newTestStore(t *testing.T) *Store {
 		title TEXT, description TEXT, priority TEXT, completed INTEGER, due_date TEXT, tags TEXT,
 		remind_at TEXT NOT NULL DEFAULT '', remind_notified TEXT NOT NULL DEFAULT '', due_notified TEXT NOT NULL DEFAULT '',
 		position INTEGER, created_at TEXT, updated_at TEXT);
-	CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);`); err != nil {
+	CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+	CREATE TABLE board_settings (
+		board_id INTEGER PRIMARY KEY REFERENCES boards(id) ON DELETE CASCADE,
+		view TEXT NOT NULL DEFAULT 'kanban');`); err != nil {
 		t.Fatalf("schema: %v", err)
 	}
 	return New(sqlDB)
@@ -192,6 +195,59 @@ func TestSettings(t *testing.T) {
 	got, _ = s.Settings()
 	if got.Theme != "dark" {
 		t.Fatalf("expected fallback theme, got %+v", got)
+	}
+}
+
+func TestBoardViews(t *testing.T) {
+	s := newTestStore(t)
+
+	// Nothing stored yet.
+	views, err := s.BoardViews()
+	if err != nil {
+		t.Fatalf("board views: %v", err)
+	}
+	if len(views) != 0 {
+		t.Fatalf("expected no views, got %+v", views)
+	}
+
+	board, err := s.CreateBoard(models.BoardInput{Name: "Views", Color: "#fff"})
+	if err != nil {
+		t.Fatalf("create board: %v", err)
+	}
+
+	// Each board keeps its own layout.
+	if err := s.SetBoardView(board.ID, "table"); err != nil {
+		t.Fatalf("set board view: %v", err)
+	}
+	other, _ := s.CreateBoard(models.BoardInput{Name: "Other", Color: "#000"})
+	if err := s.SetBoardView(other.ID, "kanban"); err != nil {
+		t.Fatalf("set other view: %v", err)
+	}
+
+	views, err = s.BoardViews()
+	if err != nil {
+		t.Fatalf("board views: %v", err)
+	}
+	if len(views) != 2 {
+		t.Fatalf("expected 2 views, got %+v", views)
+	}
+	for _, v := range views {
+		want := "kanban"
+		if v.BoardID == board.ID {
+			want = "table"
+		}
+		if v.View != want {
+			t.Fatalf("board %d: got view %q, want %q", v.BoardID, v.View, want)
+		}
+	}
+
+	// Deleting a board removes its preference row via cascade.
+	if err := s.DeleteBoard(board.ID); err != nil {
+		t.Fatalf("delete board: %v", err)
+	}
+	views, _ = s.BoardViews()
+	if len(views) != 1 || views[0].BoardID != other.ID {
+		t.Fatalf("expected only the remaining board's view, got %+v", views)
 	}
 }
 

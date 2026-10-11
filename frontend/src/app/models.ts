@@ -9,8 +9,10 @@ export type CardInput = models.CardInput;
 export type Snapshot = models.Snapshot;
 export type Reminder = models.Reminder;
 export type Settings = models.Settings;
+export type BoardView = models.BoardView;
 
 export type Theme = 'dark' | 'light';
+export type View = 'kanban' | 'table';
 
 export type Priority = 'low' | 'medium' | 'high';
 

@@ -191,6 +191,16 @@ func (a *App) SetSetting(key, value string) error {
 	return a.store.SetSetting(key, value)
 }
 
+// BoardViews returns the stored layout preference for every board.
+func (a *App) BoardViews() ([]models.BoardView, error) {
+	return a.store.BoardViews()
+}
+
+// SetBoardView remembers the layout a board should open with.
+func (a *App) SetBoardView(boardID int64, view string) error {
+	return a.store.SetBoardView(boardID, view)
+}
+
 // ---------------------------------------------------------------------------
 // Boards
 // ---------------------------------------------------------------------------

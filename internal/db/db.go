@@ -100,6 +100,11 @@ CREATE TABLE IF NOT EXISTS settings (
 	value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS board_settings (
+	board_id INTEGER PRIMARY KEY REFERENCES boards(id) ON DELETE CASCADE,
+	view     TEXT NOT NULL DEFAULT 'kanban'
+);
+
 CREATE INDEX IF NOT EXISTS idx_columns_board ON columns(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column ON cards(column_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_board ON cards(board_id);

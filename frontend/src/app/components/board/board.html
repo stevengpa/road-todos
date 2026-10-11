@@ -18,6 +18,33 @@
         </div>
       </div>
       <div class="bh-right">
+        <div class="view-toggle" role="group" aria-label="Board view">
+          <button
+            class="vt-btn"
+            [class.active]="state.view() === 'kanban'"
+            (click)="setView('kanban')"
+            title="Kanban board"
+            aria-label="Kanban board"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="5" height="16" rx="1.2" />
+              <rect x="9.5" y="4" width="5" height="11" rx="1.2" />
+              <rect x="16" y="4" width="5" height="7" rx="1.2" />
+            </svg>
+          </button>
+          <button
+            class="vt-btn"
+            [class.active]="state.view() === 'table'"
+            (click)="setView('table')"
+            title="Table view"
+            aria-label="Table view"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M3 9h18M9 9v11" />
+            </svg>
+          </button>
+        </div>
         <button class="btn ghost" (click)="edit.emit()">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -33,7 +60,8 @@
       </div>
     </header>
 
-    <div
+    @if (state.view() === 'kanban') {
+      <div
       class="board-scroll"
       cdkDropListGroup
       cdkDropList
@@ -181,7 +209,91 @@
           </button>
         }
       </div>
-    </div>
+      </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="tasks-table">
+            <thead>
+              <tr>
+                <th class="tt-status"></th>
+                <th>Task</th>
+                <th>Stage</th>
+                <th>Priority</th>
+                <th>Due</th>
+                <th>Reminder</th>
+                <th class="tt-tags">Tags</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (card of tableCards(); track card.id) {
+                <tr class="tt-row" [class.done]="card.completed" (click)="openCard(card)">
+                  <td class="tt-status">
+                    <button
+                      class="check"
+                      [class.on]="card.completed"
+                      (click)="toggle(card, $event)"
+                      [title]="card.completed ? 'Mark as open' : 'Mark as done'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </button>
+                  </td>
+                  <td class="tt-title">
+                    {{ card.title }}
+                    @if (card.description) {
+                      <small>{{ card.description }}</small>
+                    }
+                  </td>
+                  <td>
+                    <span class="stage-chip" [style.background]="columnColor(card.columnId)">
+                      <span class="stage-dot" [style.background]="columnColor(card.columnId)"></span>
+                      {{ columnName(card.columnId) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="prio-chip">
+                      <span class="prio-dot" [style.background]="priority(card.priority).color"></span>
+                      {{ priority(card.priority).label }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (card.dueDate) {
+                      <span class="due" [class.overdue]="isOverdue(card)">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                          <rect x="3" y="5" width="18" height="16" rx="2" />
+                          <path d="M3 9h18M8 3v4M16 3v4" />
+                        </svg>
+                        {{ dueLabel(card.dueDate) }}
+                      </span>
+                    }
+                  </td>
+                  <td>
+                    @if (card.remindAt) {
+                      <span class="remind">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                          <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                        </svg>
+                        {{ remindLabel(card.remindAt) }}
+                      </span>
+                    }
+                  </td>
+                  <td class="tt-tags">
+                    @for (t of tags(card.tags); track t) {
+                      <span class="tag">{{ t }}</span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="tt-empty">No tasks yet</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
   </div>
 
   @if (dialogOpen()) {

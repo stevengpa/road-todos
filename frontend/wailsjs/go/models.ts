@@ -40,6 +40,20 @@ export namespace models {
 	        this.color = source["color"];
 	    }
 	}
+	export class BoardView {
+	    boardId: number;
+	    view: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BoardView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.boardId = source["boardId"];
+	        this.view = source["view"];
+	    }
+	}
 	export class Card {
 	    id: number;
 	    boardId: number;

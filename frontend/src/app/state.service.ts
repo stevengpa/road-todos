@@ -4,6 +4,7 @@ import * as App from '../../wailsjs/go/main/App';
 import {
   Board,
   BoardInput,
+  BoardView,
   Card,
   CardInput,
   Column,
@@ -12,6 +13,7 @@ import {
   Settings,
   Snapshot,
   Theme,
+  View,
 } from './models';
 
 export interface BoardStat {
@@ -38,6 +40,11 @@ export class StateService {
   readonly theme = signal<Theme>('dark');
   readonly showCompleted = signal(false);
 
+  // Per-board layout preference, keyed by board id. The active view is derived
+  // from whichever board is currently selected.
+  readonly boardViews = signal<ReadonlyMap<number, View>>(new Map());
+  readonly view = computed<View>(() => this.boardViews().get(this.currentBoardId() ?? -1) ?? 'kanban');
+
   readonly currentBoard = computed<Board | null>(() => {
     const id = this.currentBoardId();
     return this.boards().find((b) => b.id === id) ?? null;
@@ -53,6 +60,23 @@ export class StateService {
   readonly boardCards = computed<Card[]>(() => {
     const id = this.currentBoardId();
     return this.cards().filter((c) => c.boardId === id);
+  });
+
+  // Flat, ordered list of the current board's cards after applying the search
+  // and "show completed" filters. Drives the table view.
+  readonly visibleBoardCards = computed<Card[]>(() => {
+    const showDone = this.showCompleted();
+    const q = this.search().trim().toLowerCase();
+    const colPos = new Map<number, number>(
+      this.boardColumns().map((c) => [c.id, c.position]),
+    );
+    return this.boardCards()
+      .filter((c) => (showDone || !c.completed) && (!q || this.matches(c, q)))
+      .sort((a, b) => {
+        const pa = colPos.get(a.columnId) ?? 0;
+        const pb = colPos.get(b.columnId) ?? 0;
+        return pa - pb || a.position - b.position || a.id - b.id;
+      });
   });
 
   readonly stats = computed<BoardStat>(() => {
@@ -139,6 +163,11 @@ export class StateService {
     const settings: Settings = await App.GetSettings();
     this.theme.set(settings.theme === 'light' ? 'light' : 'dark');
     this.showCompleted.set(!!settings.showCompleted);
+
+    const views: BoardView[] = (await App.BoardViews()) ?? [];
+    this.boardViews.set(
+      new Map(views.map((v) => [v.boardId, v.view === 'table' ? 'table' : 'kanban'])),
+    );
   }
 
   async setTheme(theme: Theme): Promise<void> {
@@ -150,6 +179,17 @@ export class StateService {
     const next = !this.showCompleted();
     this.showCompleted.set(next);
     await this.runVoid(() => App.SetSetting('show_completed', next ? '1' : '0'));
+  }
+
+  async setView(view: View): Promise<void> {
+    const id = this.currentBoardId();
+    if (id === null) return;
+    this.boardViews.update((map) => {
+      const next = new Map(map);
+      next.set(id, view);
+      return next;
+    });
+    await this.runVoid(() => App.SetBoardView(id, view));
   }
 
   // -------------------------------------------------------------------------
@@ -211,6 +251,11 @@ export class StateService {
   async deleteBoard(id: number): Promise<void> {
     if (!(await this.runVoid(() => App.DeleteBoard(id)))) return;
     await this.reload();
+    this.boardViews.update((map) => {
+      const next = new Map(map);
+      next.delete(id);
+      return next;
+    });
     const boards = this.boards();
     if (this.currentBoardId() === id) {
       this.currentBoardId.set(boards.length ? boards[0].id : null);

@@ -111,3 +111,9 @@ const (
 	SettingTheme         = "theme"
 	SettingShowCompleted = "show_completed"
 )
+
+// BoardView is the per-board layout preference (kanban or table).
+type BoardView struct {
+	BoardID int64  `json:"boardId"`
+	View    string `json:"view"`
+}

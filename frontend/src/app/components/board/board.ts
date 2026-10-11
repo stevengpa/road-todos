@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { StateService } from '../../state.service';
 import { CardDialog } from '../card-dialog/card-dialog';
-import { Card, CardInput, Column, parseTags, priorityMeta } from '../../models';
+import { Card, CardInput, Column, View, parseTags, priorityMeta } from '../../models';
 
 @Component({
   selector: 'app-board',
@@ -22,6 +22,11 @@ export class Board {
   protected readonly stats = this.state.stats;
   protected readonly isFiltering = computed(() => this.state.search().trim().length > 0);
   protected readonly columnIds = computed(() => this.columns().map((c) => c.id));
+  protected readonly tableCards = this.state.visibleBoardCards;
+
+  protected readonly columnMeta = computed<Map<number, Column>>(
+    () => new Map(this.columns().map((c) => [c.id, c])),
+  );
 
   protected readonly dialogOpen = signal(false);
   protected readonly editingCard = signal<Card | null>(null);
@@ -168,6 +173,18 @@ export class Board {
   protected async toggle(card: Card, event: Event): Promise<void> {
     event.stopPropagation();
     await this.state.toggleComplete(card.id);
+  }
+
+  protected setView(view: View): void {
+    void this.state.setView(view);
+  }
+
+  protected columnName(columnId: number): string {
+    return this.columnMeta().get(columnId)?.name ?? '';
+  }
+
+  protected columnColor(columnId: number): string {
+    return this.columnMeta().get(columnId)?.color ?? '#64748b';
   }
 
   // -- presentation helpers -------------------------------------------------
