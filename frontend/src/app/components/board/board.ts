@@ -83,6 +83,13 @@ export class Board {
     this.editingColumn.set(null);
   }
 
+  protected async changeColor(column: Column, event: Event): Promise<void> {
+    const value = (event.target as HTMLInputElement).value;
+    if (value && value !== column.color) {
+      await this.state.updateColumn({ id: column.id, boardId: column.boardId, name: column.name, color: value });
+    }
+  }
+
   protected async commitRename(column: Column): Promise<void> {
     if (this.editingColumn() !== column.id) return;
     const name = this.columnDraft.trim();
@@ -92,7 +99,7 @@ export class Board {
     }
   }
 
-  protected askDeleteColumn(column: Column): void {
+  protected async askDeleteColumn(column: Column): Promise<void> {
     this.confirmColumn.set(column.id);
   }
 

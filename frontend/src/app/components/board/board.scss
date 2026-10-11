@@ -180,13 +180,31 @@
 .col-name:hover {
   background: var(--hover);
 }
-.col-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--col-color);
+.col-colorpick {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
   flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: 0.15s;
 }
+.col-colorpick::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.col-colorpick::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.col-colorpick:hover {
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
 .col-text {
   overflow: hidden;
   text-overflow: ellipsis;

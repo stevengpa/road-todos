@@ -97,8 +97,16 @@
                 autofocus
               />
             } @else {
+              <input
+                class="col-colorpick"
+                type="color"
+                [value]="col.color"
+                (change)="changeColor(col, $event)"
+                (click)="$event.stopPropagation()"
+                title="Change stage color"
+                aria-label="Change stage color"
+              />
               <button class="col-name" (click)="startRename(col)" title="Rename stage">
-                <span class="col-dot"></span>
                 <span class="col-text">{{ col.name }}</span>
                 <span class="col-count">{{ state.cardsForColumn(col.id).length }}</span>
               </button>
@@ -247,8 +255,16 @@
                     autofocus
                   />
                 } @else {
+                  <input
+                    class="col-colorpick"
+                    type="color"
+                    [value]="col.color"
+                    (change)="changeColor(col, $event)"
+                    (click)="$event.stopPropagation()"
+                    title="Change stage color"
+                    aria-label="Change stage color"
+                  />
                   <button class="col-name" (click)="startRename(col)" title="Rename stage">
-                    <span class="col-dot"></span>
                     <span class="col-text">{{ col.name }}</span>
                     <span class="col-count">{{ state.cardsForColumn(col.id).length }}</span>
                   </button>
