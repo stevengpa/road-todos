@@ -20,7 +20,7 @@ func main() {
 	}
 
 	err = wails.Run(&options.App{
-		Title:     "Roadmap",
+		Title:     "Road ToDos",
 		Width:     1180,
 		Height:    780,
 		MinWidth:  900,
@@ -37,7 +37,7 @@ func main() {
 			WebviewIsTransparent: false,
 			WindowIsTranslucent:  false,
 			About: &mac.AboutInfo{
-				Title:   "Roadmap",
+				Title:   "Road ToDos",
 				Message: "A local-first roadmap and todo board.\nBuilt with Go, Wails and Angular.",
 			},
 		},

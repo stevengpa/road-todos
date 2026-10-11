@@ -12,7 +12,7 @@
   },
   "info": {
     "companyName": "road-todo",
-    "productName": "Roadmap",
+    "productName": "Road ToDos",
     "productVersion": "1.0.0",
     "copyright": "Copyright © 2026",
     "comments": "A local-first roadmap and todo board built with Go, Wails and Angular."

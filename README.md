@@ -1,4 +1,4 @@
-# Roadmap
+# Road ToDos
 
 A local-first **roadmap / todo board** desktop application for **macOS** and **Linux (Fedora)**.
 

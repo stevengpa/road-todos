@@ -8,9 +8,9 @@ STAGE="$(mktemp -d)"
 cp -R build/bin/road-todo.app "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 
-OUT="installers/Roadmap-1.0.0-macos-universal.dmg"
+OUT="installers/RoadToDos-1.0.0-macos-universal.dmg"
 rm -f "$OUT"
-diskutil image create from "$STAGE" "$OUT" --volumeName Roadmap --format UDZO
+diskutil image create from "$STAGE" "$OUT" --volumeName "Road ToDos" --format UDZO
 rm -rf "$STAGE"
 
 echo "Created $OUT"

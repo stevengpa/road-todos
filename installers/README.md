@@ -1,12 +1,12 @@
 # Installers
 
-Prebuilt installers for **Roadmap** — a local-first roadmap & todo board.
+Prebuilt installers for **Road ToDos** — a local-first roadmap & todo board.
 
-| File                                 | Platform                    | Type              |
-| ------------------------------------ | --------------------------- | ----------------- |
-| `Roadmap-1.0.0-macos-universal.dmg`  | macOS (Intel + Apple Silicon) | Disk image (`.dmg`) |
-| `Roadmap-1.0.0-fedora-x86_64.rpm`    | Fedora / RHEL (x86_64)      | RPM package       |
-| `SHA256SUMS.txt`                     | —                           | Checksums         |
+| File                                    | Platform                    | Type              |
+| --------------------------------------- | --------------------------- | ----------------- |
+| `RoadToDos-1.0.0-macos-universal.dmg`   | macOS (Intel + Apple Silicon) | Disk image (`.dmg`) |
+| `RoadToDos-1.0.0-fedora-x86_64.rpm`     | Fedora / RHEL (x86_64)      | RPM package       |
+| `SHA256SUMS.txt`                        | —                           | Checksums         |
 
 > Everything is stored locally in SQLite. No network or account is required.
 > Data lives at `~/Library/Application Support/road-todo/road-todo.db` (macOS) and
@@ -24,7 +24,7 @@ sha256sum -c SHA256SUMS.txt
 
 ## macOS
 
-1. Open `Roadmap-1.0.0-macos-universal.dmg`.
+1. Open `RoadToDos-1.0.0-macos-universal.dmg`.
 2. Drag **road-todo** into the **Applications** folder.
 3. Launch it from Applications.
 
@@ -43,10 +43,10 @@ The app is **ad-hoc signed** (not notarized), so on first launch macOS may block
 Install directly with `dnf` (it pulls the `gtk3` and `webkit2gtk4.1` dependencies):
 
 ```bash
-sudo dnf install ./Roadmap-1.0.0-fedora-x86_64.rpm
+sudo dnf install ./RoadToDos-1.0.0-fedora-x86_64.rpm
 ```
 
-Then launch **Roadmap** from the application grid, or run:
+Then launch **Road ToDos** from the application grid, or run:
 
 ```bash
 road-todo
