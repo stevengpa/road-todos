@@ -564,6 +564,34 @@
   font-size: 12.5px;
 }
 
+.st-body:has(.cdk-drag-placeholder) .st-empty,
+.st-body.cdk-drop-list-dragging .st-empty {
+  display: none;
+}
+
+.st-foot {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.st-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-dim);
+  font-weight: 650;
+  font-size: 12.5px;
+  transition: 0.15s;
+}
+.st-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 /* Row drag states mirror the kanban cards. */
 .st-body .cdk-drag-preview {
   border-radius: 10px;
