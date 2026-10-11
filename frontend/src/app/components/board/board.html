@@ -33,10 +33,32 @@
       </div>
     </header>
 
-    <div class="board-scroll" cdkDropListGroup>
+    <div
+      class="board-scroll"
+      cdkDropListGroup
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      [cdkDropListData]="columnIds()"
+      (cdkDropListDropped)="onColumnDrop($event)"
+    >
       @for (col of columns(); track col.id) {
-        <section class="column" [style]="{ '--col-color': col.color }">
+        <section
+          class="column"
+          [style]="{ '--col-color': col.color }"
+          cdkDrag
+          [cdkDragData]="col"
+        >
           <header class="col-head">
+            <button
+              class="col-grip"
+              cdkDragHandle
+              [attr.aria-label]="'Reorder stage ' + col.name"
+              title="Drag to reorder stage"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" />
+              </svg>
+            </button>
             @if (editingColumn() === col.id) {
               <input
                 class="col-name-input"

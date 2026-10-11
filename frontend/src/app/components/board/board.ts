@@ -21,6 +21,7 @@ export class Board {
   protected readonly columns = this.state.boardColumns;
   protected readonly stats = this.state.stats;
   protected readonly isFiltering = computed(() => this.state.search().trim().length > 0);
+  protected readonly columnIds = computed(() => this.columns().map((c) => c.id));
 
   protected readonly dialogOpen = signal(false);
   protected readonly editingCard = signal<Card | null>(null);
@@ -124,6 +125,12 @@ export class Board {
   }
 
   // -- drag & drop ----------------------------------------------------------
+
+  protected onColumnDrop(event: CdkDragDrop<number[]>): void {
+    const ids = [...event.container.data];
+    moveItemInArray(ids, event.previousIndex, event.currentIndex);
+    void this.state.reorderColumns(ids);
+  }
 
   protected onDrop(event: CdkDragDrop<Card[]>, column: Column): void {
     const card = event.item.data as Card;

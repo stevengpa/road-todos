@@ -115,9 +115,25 @@
 .col-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 4px;
   padding: 4px 4px 8px;
+}
+
+.col-grip {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--text-faint);
+  cursor: grab;
+  transition: 0.15s;
+}
+.col-grip:hover {
+  color: var(--text);
+  background: var(--hover);
 }
 
 .col-name {
@@ -159,6 +175,7 @@
 .col-actions {
   display: flex;
   gap: 4px;
+  margin-left: auto;
   opacity: 0;
   transition: 0.15s;
 }
@@ -420,15 +437,26 @@
 /* -- CDK drag states ------------------------------------------------------- */
 
 .cdk-drag-preview {
-  border-radius: 12px;
   background: var(--panel);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
-  padding: 12px 12px 12px 15px;
-  width: 274px;
   pointer-events: none;
   will-change: transform;
   transform: translateZ(0);
+}
+
+.col-cards .cdk-drag-preview {
+  border-radius: 12px;
+  padding: 12px 12px 12px 15px;
+  width: 274px;
+}
+
+/* A complete column lifted out of the lane keeps its own shape. */
+.column.cdk-drag-preview {
+  width: 300px;
+  padding: 8px;
+  border-radius: 16px;
+  opacity: 0.92;
 }
 
 .cdk-drag-placeholder {
@@ -436,6 +464,16 @@
   border: 1px dashed var(--accent);
   border-radius: 12px;
   background: var(--accent-soft);
+}
+
+.column.cdk-drag-placeholder {
+  border-radius: 16px;
+  border-width: 1.5px;
+}
+
+/* Other columns slide aside while a column is being dragged. */
+.board-scroll.cdk-drop-list-dragging .column:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
 }
 
 .cdk-drag-animating {
