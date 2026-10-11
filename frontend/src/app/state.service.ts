@@ -172,8 +172,7 @@ export class StateService {
   }
 
   async deleteBoard(id: number): Promise<void> {
-    const ok = await this.run(() => App.DeleteBoard(id));
-    if (ok === null) return;
+    if (!(await this.runVoid(() => App.DeleteBoard(id)))) return;
     await this.reload();
     const boards = this.boards();
     if (this.currentBoardId() === id) {
@@ -198,8 +197,7 @@ export class StateService {
   }
 
   async deleteColumn(id: number): Promise<void> {
-    const ok = await this.run(() => App.DeleteColumn(id));
-    if (ok === null) return;
+    if (!(await this.runVoid(() => App.DeleteColumn(id)))) return;
     this.columns.update((list) => list.filter((c) => c.id !== id));
     this.cards.update((list) => list.filter((c) => c.columnId !== id));
   }
@@ -238,8 +236,7 @@ export class StateService {
   }
 
   async deleteCard(id: number): Promise<void> {
-    const ok = await this.run(() => App.DeleteCard(id));
-    if (ok === null) return;
+    if (!(await this.runVoid(() => App.DeleteCard(id)))) return;
     this.cards.update((list) => list.filter((c) => c.id !== id));
     void this.refreshReminders();
   }
@@ -295,6 +292,20 @@ export class StateService {
       this.error.set(this.describe(err));
       setTimeout(() => this.error.set(null), 4000);
       return null;
+    }
+  }
+
+  // Methods that only return a Go `error` resolve their promise with `null` on
+  // success, so a resolved value can't signal failure. This helper reports
+  // success explicitly based on whether the call threw.
+  private async runVoid(fn: () => Promise<unknown>): Promise<boolean> {
+    try {
+      await fn();
+      return true;
+    } catch (err) {
+      this.error.set(this.describe(err));
+      setTimeout(() => this.error.set(null), 4000);
+      return false;
     }
   }
 

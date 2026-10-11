@@ -1,2 +1,2 @@
-431439d058a03814aee9e4c23ce893d702fb956175f4cfea7f98caed98079cb1  RoadToDos-1.0.0-macos-universal.dmg
-ce416849bcb95e2b8c38d5e912f651716411f6616b0dc8abcca45465027c2315  RoadToDos-1.0.0-fedora-x86_64.rpm
+49d3ef54ac8c2883a17395288f1812f0e3c47f34881bd6395be9db5b4a27820b  RoadToDos-1.0.0-macos-universal.dmg
+7c4438adb8a8ec3468faa471ae31b304bcd1aeabf046d03ef3f12b793728f811  RoadToDos-1.0.0-fedora-x86_64.rpm
