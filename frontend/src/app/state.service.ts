@@ -255,7 +255,9 @@ export class StateService {
     const index = ids.indexOf(cardId);
     this.cards.update((list) =>
       list.map((c) => {
-        if (c.id === cardId) return { ...c, columnId };
+        if (c.id === cardId) {
+          return { ...c, columnId, position: index === -1 ? c.position : index };
+        }
         const idx = ids.indexOf(c.id);
         return idx === -1 ? c : { ...c, position: idx };
       }),

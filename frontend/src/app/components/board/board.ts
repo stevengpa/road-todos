@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
-import {
-  CdkDragDrop,
-  DragDropModule,
-  moveItemInArray,
-  transferArrayItem,
-} from '@angular/cdk/drag-drop';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 
 import { StateService } from '../../state.service';
@@ -133,26 +128,19 @@ export class Board {
   protected onDrop(event: CdkDragDrop<Card[]>, column: Column): void {
     const card = event.item.data as Card;
 
+    // The drop lists are bound to arrays owned by the signal store, so we must
+    // never mutate them here. Build the desired order and let the store update
+    // the single source of truth (which re-derives every column).
     if (event.previousContainer === event.container) {
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
-      this.state.reorderCards(
-        column.id,
-        event.container.data.map((c) => c.id),
-      );
+      const ids = event.container.data.map((c) => c.id);
+      moveItemInArray(ids, event.previousIndex, event.currentIndex);
+      void this.state.reorderCards(column.id, ids);
       return;
     }
 
-    transferArrayItem(
-      event.previousContainer.data,
-      event.container.data,
-      event.previousIndex,
-      event.currentIndex,
-    );
-    this.state.moveCard(
-      card.id,
-      column.id,
-      event.container.data.map((c) => c.id),
-    );
+    const ids = event.container.data.map((c) => c.id);
+    ids.splice(event.currentIndex, 0, card.id);
+    void this.state.moveCard(card.id, column.id, ids);
   }
 
   protected async toggle(card: Card, event: Event): Promise<void> {

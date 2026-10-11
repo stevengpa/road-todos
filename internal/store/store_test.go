@@ -98,6 +98,56 @@ func TestBoardColumnCardLifecycle(t *testing.T) {
 	}
 }
 
+func TestMoveCardNoDuplicates(t *testing.T) {
+	s := newTestStore(t)
+
+	board, err := s.CreateBoard(models.BoardInput{Name: "Move", Color: "#fff"})
+	if err != nil {
+		t.Fatalf("create board: %v", err)
+	}
+	cols, _ := s.listColumns(board.ID)
+
+	var cards []models.Card
+	for _, title := range []string{"A", "B", "C"} {
+		c, err := s.CreateCard(models.CardInput{
+			BoardID:  board.ID,
+			ColumnID: cols[0].ID,
+			Title:    title,
+		})
+		if err != nil {
+			t.Fatalf("create card %s: %v", title, err)
+		}
+		cards = append(cards, c)
+	}
+
+	// Move the middle card to the second column.
+	if err := s.MoveCard(cards[1].ID, cols[1].ID, 0); err != nil {
+		t.Fatalf("move card: %v", err)
+	}
+	// Reorder within the first column.
+	if err := s.MoveCard(cards[2].ID, cols[0].ID, 0); err != nil {
+		t.Fatalf("reorder card: %v", err)
+	}
+
+	snap, err := s.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+
+	seen := map[int64]int{}
+	for _, c := range snap.Cards {
+		seen[c.ID]++
+	}
+	for id, n := range seen {
+		if n != 1 {
+			t.Fatalf("card %d appears %d times", id, n)
+		}
+	}
+	if len(snap.Cards) != len(cards) {
+		t.Fatalf("expected %d cards, got %d", len(cards), len(snap.Cards))
+	}
+}
+
 func TestReminders(t *testing.T) {
 	s := newTestStore(t)
 

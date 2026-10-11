@@ -270,12 +270,17 @@
   flex: none;
   width: 20px;
   height: 20px;
+  padding: 0;
+  line-height: 0;
   border-radius: 50%;
   border: 1.5px solid var(--border-strong);
   display: grid;
   place-items: center;
   color: transparent;
   transition: 0.15s;
+}
+.check svg {
+  display: block;
 }
 .check:hover {
   border-color: var(--accent);
