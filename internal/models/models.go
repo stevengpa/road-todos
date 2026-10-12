@@ -31,6 +31,7 @@ type Card struct {
 	Completed     bool   `json:"completed"`
 	DueDate       string `json:"dueDate"`
 	RemindAt      string `json:"remindAt"`
+	RemindBefore  int    `json:"remindBefore"`
 	Tags          string `json:"tags"`
 	Recurrence    string `json:"recurrence"`
 	RecurInterval int    `json:"recurInterval"`
@@ -50,6 +51,7 @@ type CardInput struct {
 	Priority      string `json:"priority"`
 	DueDate       string `json:"dueDate"`
 	RemindAt      string `json:"remindAt"`
+	RemindBefore  int    `json:"remindBefore"`
 	Tags          string `json:"tags"`
 	Recurrence    string `json:"recurrence"`
 	RecurInterval int    `json:"recurInterval"`

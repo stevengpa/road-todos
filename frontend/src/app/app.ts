@@ -15,7 +15,7 @@ import { StateService } from './state.service';
 import { Board } from './components/board/board';
 import { BoardDialog } from './components/board-dialog/board-dialog';
 import { Calendar } from './components/calendar/calendar';
-import { BoardInput, Board as BoardModel, Reminder } from './models';
+import { BoardInput, Board as BoardModel, Reminder, formatDateTime, formatDue } from './models';
 
 @Component({
   selector: 'app-root',
@@ -63,11 +63,9 @@ export class App implements OnInit, OnDestroy {
   protected reminderLabel(r: Reminder): string {
     if (r.kind === 'reminder') {
       const d = new Date(r.remindAt);
-      return isNaN(d.getTime())
-        ? 'Reminder'
-        : `Reminder · ${d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+      return isNaN(d.getTime()) ? 'Reminder' : `Reminder · ${formatDateTime(r.remindAt)}`;
     }
-    return r.overdue ? `Overdue · due ${r.dueDate}` : 'Due today';
+    return r.overdue ? `Overdue · due ${formatDue(r.dueDate)}` : 'Due today';
   }
 
   protected viewReminder(r: Reminder): void {

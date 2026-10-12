@@ -35,48 +35,34 @@
         ></textarea>
       </label>
 
-      <div class="grid-2">
-        <label class="field">
-          <span class="label">Stage</span>
-          <select class="input" [(ngModel)]="columnId">
-            @for (col of columns(); track col.id) {
-              <option [ngValue]="col.id">{{ col.name }}</option>
-            }
-          </select>
-        </label>
-
-        <div class="field">
-          <span class="label">Due date</span>
-          <span class="input-row">
-            <input class="input" type="date" [(ngModel)]="dueDate" />
-            @if (dueDate) {
-              <button
-                type="button"
-                class="clear-btn"
-                (click)="clearDueDate()"
-                title="Clear due date"
-                aria-label="Clear due date"
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            }
-          </span>
-        </div>
-      </div>
+      <label class="field">
+        <span class="label">Stage</span>
+        <select class="input" [(ngModel)]="columnId">
+          @for (col of columns(); track col.id) {
+            <option [ngValue]="col.id">{{ col.name }}</option>
+          }
+        </select>
+      </label>
 
       <div class="field">
-        <span class="label">Reminder <span class="hint">desktop + in-app alert</span></span>
+        <span class="label">Due date <span class="hint">time is optional</span></span>
         <span class="input-row">
-          <input class="input" type="datetime-local" [(ngModel)]="remindAt" />
-          @if (remindAt) {
+          <input class="input" type="date" [(ngModel)]="dueDate" />
+          <input
+            class="input due-time"
+            type="time"
+            [(ngModel)]="dueTime"
+            [disabled]="!dueDate"
+            title="Due time"
+            aria-label="Due time"
+          />
+          @if (dueDate) {
             <button
               type="button"
               class="clear-btn"
-              (click)="clearReminder()"
-              title="Clear reminder"
-              aria-label="Clear reminder"
+              (click)="clearDueDate()"
+              title="Clear due date"
+              aria-label="Clear due date"
             >
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M6 6l12 12M18 6L6 18" />
@@ -85,6 +71,56 @@
           }
         </span>
       </div>
+
+      <div class="field">
+        <span class="label">Reminder <span class="hint">desktop + in-app alert</span></span>
+        <select class="input" [(ngModel)]="remindMode">
+          <option value="none">None</option>
+          <option value="at">At a specific time</option>
+          <option value="before">Before the due date</option>
+        </select>
+      </div>
+
+      @if (remindMode === 'at') {
+        <div class="field">
+          <span class="input-row">
+            <input class="input" type="datetime-local" [(ngModel)]="remindAt" />
+            @if (remindAt) {
+              <button
+                type="button"
+                class="clear-btn"
+                (click)="clearReminder()"
+                title="Clear reminder"
+                aria-label="Clear reminder"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            }
+          </span>
+        </div>
+      }
+
+      @if (remindMode === 'before') {
+        <div class="grid-2">
+          <label class="field">
+            <span class="label">Remind me</span>
+            <input class="input" type="number" min="1" step="1" [(ngModel)]="remindBeforeAmount" />
+          </label>
+          <label class="field">
+            <span class="label">Before due</span>
+            <select class="input" [(ngModel)]="remindBeforeUnit">
+              @for (u of remindBeforeUnits; track u.value) {
+                <option [ngValue]="u.value">{{ u.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        @if (!dueDate) {
+          <p class="field-hint">Add a due date to use a relative reminder.</p>
+        }
+      }
 
       <div class="field">
         <span class="label">Repeat <span class="hint">rolls over when completed</span></span>

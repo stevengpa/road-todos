@@ -80,6 +80,65 @@ export const RECUR_UNITS: { value: RecurUnit; label: string }[] = [
   { value: 'year', label: 'year(s)' },
 ];
 
+export type RemindBeforeUnit = 'minute' | 'hour' | 'day' | 'week';
+
+export const REMIND_BEFORE_UNITS: { value: RemindBeforeUnit; label: string }[] = [
+  { value: 'minute', label: 'minute(s)' },
+  { value: 'hour', label: 'hour(s)' },
+  { value: 'day', label: 'day(s)' },
+  { value: 'week', label: 'week(s)' },
+];
+
+const OFFSET_UNIT_MINUTES: Record<RemindBeforeUnit, number> = {
+  minute: 1,
+  hour: 60,
+  day: 1440,
+  week: 10080,
+};
+
+/** Converts an amount/unit offset into whole minutes (minimum 1). */
+export function toMinutes(amount: number, unit: RemindBeforeUnit): number {
+  const n = Math.max(1, Math.round(Number(amount) || 1));
+  return n * OFFSET_UNIT_MINUTES[unit];
+}
+
+/** Splits a stored minute offset into the largest whole unit for display. */
+export function splitOffset(minutes: number): { amount: number; unit: RemindBeforeUnit } {
+  if (minutes > 0 && minutes % 10080 === 0) return { amount: minutes / 10080, unit: 'week' };
+  if (minutes > 0 && minutes % 1440 === 0) return { amount: minutes / 1440, unit: 'day' };
+  if (minutes > 0 && minutes % 60 === 0) return { amount: minutes / 60, unit: 'hour' };
+  return { amount: Math.max(1, minutes), unit: 'minute' };
+}
+
+/** Human label for a reminder offset, e.g. "1 day" or "2 hours". */
+export function offsetLabel(minutes: number): string {
+  const { amount, unit } = splitOffset(minutes);
+  return `${amount} ${unit}${amount === 1 ? '' : 's'}`;
+}
+
+const DATE_OPTS: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+const TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+};
+
+/** Formats a due value ("YYYY-MM-DD" or "YYYY-MM-DDTHH:mm") in 12-hour AM/PM. */
+export function formatDue(value: string): string {
+  if (!value) return '';
+  const hasTime = value.includes('T');
+  const d = new Date(hasTime ? value : `${value}T00:00:00`);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleString(undefined, hasTime ? { ...DATE_OPTS, ...TIME_OPTS } : DATE_OPTS);
+}
+
+/** Formats a date-time value in 12-hour AM/PM. */
+export function formatDateTime(value: string): string {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleString(undefined, { ...DATE_OPTS, ...TIME_OPTS });
+}
+
 /** Short human label for a card's recurrence, or '' when it does not repeat. */
 export function recurrenceLabel(recurrence: string, interval: number, unit: string): string {
   switch (recurrence) {

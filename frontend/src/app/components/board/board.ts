@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { StateService } from '../../state.service';
 import { CardDialog } from '../card-dialog/card-dialog';
-import { Board as BoardModel, Card, CardInput, Column, View, parseTags, priorityMeta, recurrenceLabel } from '../../models';
+import { Board as BoardModel, Card, CardInput, Column, View, formatDateTime, formatDue, offsetLabel, parseTags, priorityMeta, recurrenceLabel } from '../../models';
 
 @Component({
   selector: 'app-board',
@@ -194,29 +194,20 @@ export class Board {
   protected tags = parseTags;
   protected repeat = recurrenceLabel;
 
-  protected dueLabel(value: string): string {
-    const date = new Date(`${value}T00:00:00`);
-    if (isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  }
+  protected dueLabel = formatDue;
 
-  protected remindLabel(value: string): string {
-    const date = new Date(value);
-    if (isNaN(date.getTime())) return value;
-    return date.toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+  protected remindLabel = formatDateTime;
+
+  protected remindText(card: Card): string {
+    if (card.remindBefore > 0) return `${offsetLabel(card.remindBefore)} before due`;
+    return this.remindLabel(card.remindAt);
   }
 
   protected isOverdue(card: Card): boolean {
     if (card.completed || !card.dueDate) return false;
-    const due = new Date(`${card.dueDate}T00:00:00`).getTime();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return due < today.getTime();
+    const due = new Date(
+      card.dueDate.includes('T') ? card.dueDate : `${card.dueDate}T23:59:59`,
+    ).getTime();
+    return !isNaN(due) && due < Date.now();
   }
 }

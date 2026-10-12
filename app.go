@@ -164,12 +164,32 @@ func (a *App) sendNotification(r models.Reminder) {
 func reminderBody(r models.Reminder) string {
 	switch {
 	case r.Kind == models.ReminderKindCustom:
+		if v := formatStamp(r.RemindAt); v != "" {
+			return "Reminder · " + v
+		}
 		return "Reminder"
 	case r.Overdue:
-		return "Overdue · due " + r.DueDate
+		if v := formatStamp(r.DueDate); v != "" {
+			return "Overdue · due " + v
+		}
+		return "Overdue"
 	default:
 		return "Due today"
 	}
+}
+
+// formatStamp renders a stored date or date-time in a friendly 12-hour format.
+func formatStamp(value string) string {
+	if value == "" {
+		return ""
+	}
+	if t, err := time.ParseInLocation("2006-01-02T15:04", value, time.Local); err == nil {
+		return t.Format("Jan 2, 2006 3:04 PM")
+	}
+	if t, err := time.ParseInLocation("2006-01-02", value, time.Local); err == nil {
+		return t.Format("Jan 2, 2006")
+	}
+	return value
 }
 
 // ---------------------------------------------------------------------------

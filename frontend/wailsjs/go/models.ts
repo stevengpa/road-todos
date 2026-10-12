@@ -64,6 +64,7 @@ export namespace models {
 	    completed: boolean;
 	    dueDate: string;
 	    remindAt: string;
+	    remindBefore: number;
 	    tags: string;
 	    recurrence: string;
 	    recurInterval: number;
@@ -87,6 +88,7 @@ export namespace models {
 	        this.completed = source["completed"];
 	        this.dueDate = source["dueDate"];
 	        this.remindAt = source["remindAt"];
+	        this.remindBefore = source["remindBefore"];
 	        this.tags = source["tags"];
 	        this.recurrence = source["recurrence"];
 	        this.recurInterval = source["recurInterval"];
@@ -105,6 +107,7 @@ export namespace models {
 	    priority: string;
 	    dueDate: string;
 	    remindAt: string;
+	    remindBefore: number;
 	    tags: string;
 	    recurrence: string;
 	    recurInterval: number;
@@ -124,6 +127,7 @@ export namespace models {
 	        this.priority = source["priority"];
 	        this.dueDate = source["dueDate"];
 	        this.remindAt = source["remindAt"];
+	        this.remindBefore = source["remindBefore"];
 	        this.tags = source["tags"];
 	        this.recurrence = source["recurrence"];
 	        this.recurInterval = source["recurInterval"];

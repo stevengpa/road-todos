@@ -35,6 +35,7 @@ func newTestStore(t *testing.T) *Store {
 		title TEXT, description TEXT, priority TEXT, completed INTEGER, due_date TEXT, tags TEXT,
 		remind_at TEXT NOT NULL DEFAULT '', remind_notified TEXT NOT NULL DEFAULT '', due_notified TEXT NOT NULL DEFAULT '',
 		recurrence TEXT NOT NULL DEFAULT '', recur_interval INTEGER NOT NULL DEFAULT 1, recur_unit TEXT NOT NULL DEFAULT 'day',
+		remind_before INTEGER NOT NULL DEFAULT 0,
 		position INTEGER, created_at TEXT, updated_at TEXT);
 	CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 	CREATE TABLE board_settings (
@@ -384,5 +385,74 @@ func TestRecurringRollOver(t *testing.T) {
 	done, _ := s.ToggleComplete(plain.ID)
 	if !done.Completed {
 		t.Fatal("non-recurring task should be marked complete")
+	}
+}
+
+func TestRemindBeforeDue(t *testing.T) {
+	s := newTestStore(t)
+
+	board, _ := s.CreateBoard(models.BoardInput{Name: "B", Color: "#fff"})
+	cols, _ := s.listColumns(board.ID)
+
+	// A relative reminder anchors to 9:00 local on the due date minus the offset.
+	card, err := s.CreateCard(models.CardInput{
+		BoardID:      board.ID,
+		ColumnID:     cols[0].ID,
+		Title:        "Before",
+		DueDate:      "2030-05-10",
+		RemindBefore: 1440, // one day
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if card.RemindAt != "2030-05-09T09:00" {
+		t.Fatalf("expected 2030-05-09T09:00, got %q", card.RemindAt)
+	}
+	if card.RemindBefore != 1440 {
+		t.Fatalf("expected offset preserved, got %d", card.RemindBefore)
+	}
+
+	// A due value with an explicit time measures the offset from that time.
+	timed, err := s.CreateCard(models.CardInput{
+		BoardID:      board.ID,
+		ColumnID:     cols[0].ID,
+		Title:        "Timed",
+		DueDate:      "2030-05-10T14:30",
+		RemindBefore: 90,
+	})
+	if err != nil {
+		t.Fatalf("create timed: %v", err)
+	}
+	if timed.RemindAt != "2030-05-10T13:00" {
+		t.Fatalf("expected 2030-05-10T13:00, got %q", timed.RemindAt)
+	}
+
+	// A relative reminder is recomputed when a recurring card rolls over.
+	rec, _ := s.CreateCard(models.CardInput{
+		BoardID:      board.ID,
+		ColumnID:     cols[0].ID,
+		Title:        "Rec",
+		DueDate:      time.Now().Format("2006-01-02"),
+		RemindBefore: 60,
+		Recurrence:   models.RecurrenceDaily,
+	})
+	rolled, _ := s.ToggleComplete(rec.ID)
+	want := time.Now().AddDate(0, 0, 1).Format("2006-01-02") + "T08:00"
+	if rolled.RemindAt != want {
+		t.Fatalf("expected %q, got %q", want, rolled.RemindAt)
+	}
+
+	// Recurrence preserves an explicit due time.
+	recTimed, _ := s.CreateCard(models.CardInput{
+		BoardID:    board.ID,
+		ColumnID:   cols[0].ID,
+		Title:      "Rec timed",
+		DueDate:    time.Now().Format("2006-01-02") + "T14:30",
+		Recurrence: models.RecurrenceDaily,
+	})
+	rolledTimed, _ := s.ToggleComplete(recTimed.ID)
+	wantDue := time.Now().AddDate(0, 0, 1).Format("2006-01-02") + "T14:30"
+	if rolledTimed.DueDate != wantDue {
+		t.Fatalf("expected due %q, got %q", wantDue, rolledTimed.DueDate)
 	}
 }

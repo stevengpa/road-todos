@@ -10,9 +10,13 @@ import {
   Priority,
   RECURRENCE_OPTIONS,
   RECUR_UNITS,
+  REMIND_BEFORE_UNITS,
   Recurrence,
   RecurUnit,
+  RemindBeforeUnit,
   priorityMeta,
+  splitOffset,
+  toMinutes,
 } from '../../models';
 
 @Component({
@@ -36,6 +40,7 @@ export class CardDialog implements OnInit {
   protected readonly meta = priorityMeta;
   protected readonly recurrenceOptions = RECURRENCE_OPTIONS;
   protected readonly recurUnits = RECUR_UNITS;
+  protected readonly remindBeforeUnits = REMIND_BEFORE_UNITS;
 
   protected readonly confirming = signal(false);
   protected readonly editing = computed(() => this.card() != null);
@@ -48,7 +53,11 @@ export class CardDialog implements OnInit {
   protected description = '';
   protected priority: Priority = 'medium';
   protected dueDate = '';
+  protected dueTime = '';
+  protected remindMode: 'none' | 'at' | 'before' = 'none';
   protected remindAt = '';
+  protected remindBeforeAmount = 1;
+  protected remindBeforeUnit: RemindBeforeUnit = 'day';
   protected tags = '';
   protected columnId = 0;
   protected recurrence: Recurrence = '';
@@ -61,8 +70,18 @@ export class CardDialog implements OnInit {
       this.title = card.title;
       this.description = card.description;
       this.priority = (card.priority as Priority) ?? 'medium';
-      this.dueDate = card.dueDate;
+      const [dueDate, dueTime] = (card.dueDate ?? '').split('T');
+      this.dueDate = dueDate ?? '';
+      this.dueTime = dueTime ?? '';
       this.remindAt = card.remindAt;
+      if (card.remindBefore > 0) {
+        const { amount, unit } = splitOffset(card.remindBefore);
+        this.remindMode = 'before';
+        this.remindBeforeAmount = amount;
+        this.remindBeforeUnit = unit;
+      } else if (card.remindAt) {
+        this.remindMode = 'at';
+      }
       this.tags = card.tags;
       this.columnId = card.columnId;
       this.recurrence = (card.recurrence as Recurrence) ?? '';
@@ -79,9 +98,11 @@ export class CardDialog implements OnInit {
 
   protected clearDueDate(): void {
     this.dueDate = '';
+    this.dueTime = '';
   }
 
   protected clearReminder(): void {
+    this.remindMode = 'none';
     this.remindAt = '';
   }
 
@@ -93,6 +114,9 @@ export class CardDialog implements OnInit {
       .join(', ');
 
     const custom = this.recurrence === 'custom';
+    const remindBefore =
+      this.remindMode === 'before' ? toMinutes(this.remindBeforeAmount, this.remindBeforeUnit) : 0;
+    const dueDate = this.dueDate ? (this.dueTime ? `${this.dueDate}T${this.dueTime}` : this.dueDate) : '';
     this.save.emit({
       id: this.card()?.id ?? 0,
       boardId: this.boardId(),
@@ -100,8 +124,9 @@ export class CardDialog implements OnInit {
       title: this.title.trim() || 'Untitled task',
       description: this.description.trim(),
       priority: this.priority,
-      dueDate: this.dueDate,
-      remindAt: this.remindAt,
+      dueDate,
+      remindAt: this.remindMode === 'at' ? this.remindAt : '',
+      remindBefore,
       tags,
       recurrence: this.recurrence,
       recurInterval: custom ? Math.max(1, Number(this.recurInterval) || 1) : 1,

@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS cards (
 	completed       INTEGER NOT NULL DEFAULT 0,
 	due_date        TEXT NOT NULL DEFAULT '',
 	remind_at       TEXT NOT NULL DEFAULT '',
+	remind_before   INTEGER NOT NULL DEFAULT 0,
 	remind_notified TEXT NOT NULL DEFAULT '',
 	due_notified    TEXT NOT NULL DEFAULT '',
 	tags            TEXT NOT NULL DEFAULT '',
@@ -120,6 +121,7 @@ CREATE INDEX IF NOT EXISTS idx_cards_board ON cards(board_id);
 	// working when new columns are introduced.
 	columns := []struct{ table, column, ddl string }{
 		{"cards", "remind_at", `ALTER TABLE cards ADD COLUMN remind_at TEXT NOT NULL DEFAULT ''`},
+		{"cards", "remind_before", `ALTER TABLE cards ADD COLUMN remind_before INTEGER NOT NULL DEFAULT 0`},
 		{"cards", "remind_notified", `ALTER TABLE cards ADD COLUMN remind_notified TEXT NOT NULL DEFAULT ''`},
 		{"cards", "due_notified", `ALTER TABLE cards ADD COLUMN due_notified TEXT NOT NULL DEFAULT ''`},
 		{"cards", "recurrence", `ALTER TABLE cards ADD COLUMN recurrence TEXT NOT NULL DEFAULT ''`},

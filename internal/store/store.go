@@ -255,7 +255,7 @@ func (s *Store) ReorderColumns(boardID int64, ids []int64) error {
 
 func (s *Store) listCards(boardID int64) ([]models.Card, error) {
 	query := `SELECT id, board_id, column_id, title, description, priority, completed,
-	                 due_date, remind_at, tags, recurrence, recur_interval, recur_unit,
+	                 due_date, remind_at, remind_before, tags, recurrence, recur_interval, recur_unit,
 	                 position, created_at, updated_at FROM cards`
 	args := []any{}
 	if boardID > 0 {
@@ -275,7 +275,7 @@ func (s *Store) listCards(boardID int64) ([]models.Card, error) {
 		var c models.Card
 		var completed int
 		if err := rows.Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Priority,
-			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Recurrence, &c.RecurInterval, &c.RecurUnit,
+			&completed, &c.DueDate, &c.RemindAt, &c.RemindBefore, &c.Tags, &c.Recurrence, &c.RecurInterval, &c.RecurUnit,
 			&c.Position, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
@@ -290,10 +290,10 @@ func (s *Store) getCard(id int64) (models.Card, error) {
 	var completed int
 	err := s.db.QueryRow(
 		`SELECT id, board_id, column_id, title, description, priority, completed,
-		        due_date, remind_at, tags, recurrence, recur_interval, recur_unit,
+		        due_date, remind_at, remind_before, tags, recurrence, recur_interval, recur_unit,
 		        position, created_at, updated_at FROM cards WHERE id = ?`, id).
 		Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Priority,
-			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Recurrence, &c.RecurInterval, &c.RecurUnit,
+			&completed, &c.DueDate, &c.RemindAt, &c.RemindBefore, &c.Tags, &c.Recurrence, &c.RecurInterval, &c.RecurUnit,
 			&c.Position, &c.CreatedAt, &c.UpdatedAt)
 	c.Completed = completed == 1
 	return c, err
@@ -308,6 +308,7 @@ func (s *Store) CreateCard(in models.CardInput) (models.Card, error) {
 		in.Priority = "medium"
 	}
 	normalizeRecurrence(&in)
+	remindAt := effectiveRemindAt(in.DueDate, in.RemindBefore, in.RemindAt)
 
 	var pos int
 	if err := s.db.QueryRow(
@@ -319,10 +320,10 @@ func (s *Store) CreateCard(in models.CardInput) (models.Card, error) {
 	ts := now()
 	res, err := s.db.Exec(
 		`INSERT INTO cards (board_id, column_id, title, description, priority, completed,
-		                    due_date, remind_at, tags, recurrence, recur_interval, recur_unit,
+		                    due_date, remind_at, remind_before, tags, recurrence, recur_interval, recur_unit,
 		                    position, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		in.BoardID, in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags,
+		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		in.BoardID, in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, remindAt, in.RemindBefore, in.Tags,
 		in.Recurrence, in.RecurInterval, in.RecurUnit, pos, ts, ts)
 	if err != nil {
 		return models.Card{}, err
@@ -346,11 +347,12 @@ func (s *Store) UpdateCard(in models.CardInput) (models.Card, error) {
 		in.Priority = "medium"
 	}
 	normalizeRecurrence(&in)
+	remindAt := effectiveRemindAt(in.DueDate, in.RemindBefore, in.RemindAt)
 	_, err := s.db.Exec(
 		`UPDATE cards SET column_id = ?, title = ?, description = ?, priority = ?,
-		                  due_date = ?, remind_at = ?, tags = ?, recurrence = ?,
+		                  due_date = ?, remind_at = ?, remind_before = ?, tags = ?, recurrence = ?,
 		                  recur_interval = ?, recur_unit = ?, updated_at = ? WHERE id = ?`,
-		in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags,
+		in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, remindAt, in.RemindBefore, in.Tags,
 		in.Recurrence, in.RecurInterval, in.RecurUnit, now(), in.ID)
 	if err != nil {
 		return models.Card{}, err
@@ -394,7 +396,9 @@ func (s *Store) rollOverRecurring(card models.Card) (models.Card, error) {
 	next := nextOccurrence(base, card.Recurrence, card.RecurInterval, card.RecurUnit)
 
 	remind := card.RemindAt
-	if remind != "" {
+	if card.RemindBefore > 0 {
+		remind = effectiveRemindAt(next, card.RemindBefore, "")
+	} else if remind != "" {
 		remind = shiftDateTime(remind, daysBetween(base, next))
 	}
 
@@ -410,6 +414,29 @@ func (s *Store) rollOverRecurring(card models.Card) (models.Card, error) {
 }
 
 const dateFormat = "2006-01-02"
+
+// remindReferenceHour is the wall-clock hour (local) that date-only due dates are
+// anchored to when computing a relative "before" reminder.
+const remindReferenceHour = 9
+
+// effectiveRemindAt resolves the stored reminder time. A positive before-minutes
+// offset (relative to the due date) takes precedence over an explicit time. When
+// the due date carries its own time the offset is measured from it directly;
+// otherwise the due date is anchored at 9:00 local.
+func effectiveRemindAt(dueDate string, beforeMinutes int, absolute string) string {
+	if beforeMinutes <= 0 || dueDate == "" {
+		return absolute
+	}
+	t, hasTime, ok := parseDueTime(dueDate)
+	if !ok {
+		return absolute
+	}
+	if !hasTime {
+		t = t.Add(time.Duration(remindReferenceHour) * time.Hour)
+	}
+	t = t.Add(-time.Duration(beforeMinutes) * time.Minute)
+	return t.Format(reminderTimeFormat)
+}
 
 // normalizeRecurrence clamps a card's recurrence fields to valid values.
 func normalizeRecurrence(in *models.CardInput) {
@@ -433,24 +460,42 @@ func normalizeRecurrence(in *models.CardInput) {
 	}
 }
 
-// parseDate parses a plain calendar date in local time.
-func parseDate(value string) (time.Time, bool) {
+// parseDueTime parses a card due value that may be date-only ("2006-01-02") or
+// carry an optional time ("2006-01-02T15:04"). hasTime reports which form fitted.
+func parseDueTime(value string) (t time.Time, hasTime, ok bool) {
 	if value == "" {
-		return time.Time{}, false
+		return time.Time{}, false, false
 	}
-	t, err := time.ParseInLocation(dateFormat, value, time.Local)
-	if err != nil {
-		return time.Time{}, false
+	if ts, err := time.ParseInLocation(reminderTimeFormat, value, time.Local); err == nil {
+		return ts, true, true
 	}
-	return t, true
+	if ts, err := time.ParseInLocation(dateFormat, value, time.Local); err == nil {
+		return ts, false, true
+	}
+	return time.Time{}, false, false
+}
+
+// parseDate parses a due value, discarding whether an explicit time was present.
+func parseDate(value string) (time.Time, bool) {
+	t, _, ok := parseDueTime(value)
+	return t, ok
+}
+
+// dueDay returns the calendar-date portion of a due value.
+func dueDay(value string) string {
+	if len(value) >= 10 {
+		return value[:10]
+	}
+	return value
 }
 
 // nextOccurrence returns the next calendar date for a recurrence, always landing
 // on or after today so a late completion does not leave a past due date.
 func nextOccurrence(base, recurrence string, interval int, unit string) string {
-	t, ok := parseDate(base)
+	t, hasTime, ok := parseDueTime(base)
 	if !ok {
 		t = time.Now()
+		hasTime = false
 	}
 	if interval < 1 {
 		interval = 1
@@ -486,6 +531,9 @@ func nextOccurrence(base, recurrence string, interval int, unit string) string {
 	next := step(t)
 	for !next.After(today) {
 		next = step(next)
+	}
+	if hasTime {
+		return next.Format(reminderTimeFormat)
 	}
 	return next.Format(dateFormat)
 }
@@ -657,7 +705,7 @@ func (s *Store) RemindersToFire() ([]models.Reminder, error) {
 			continue
 		}
 
-		dueReached := dueDate != "" && dueDate <= today && dueNotified != dueDate
+		dueReached := dueDate != "" && dueDay(dueDate) <= today && dueNotified != dueDate
 		if dueReached {
 			due = append(due, reminderFor2(id, boardID, columnID, title, dueDate, remindAt,
 				models.ReminderKindDue, today))
@@ -688,13 +736,14 @@ func reminderFor(id, boardID, columnID int64, title, dueDate, remindAt, today, n
 	if remindAt != "" && remindAt <= nowStamp {
 		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindCustom, today), true
 	}
-	if dueDate != "" && dueDate <= today {
+	if day := dueDay(dueDate); day != "" && day <= today {
 		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindDue, today), true
 	}
 	return models.Reminder{}, false
 }
 
 func reminderFor2(id, boardID, columnID int64, title, dueDate, remindAt, kind, today string) models.Reminder {
+	day := dueDay(dueDate)
 	return models.Reminder{
 		ID:       id,
 		BoardID:  boardID,
@@ -703,7 +752,7 @@ func reminderFor2(id, boardID, columnID int64, title, dueDate, remindAt, kind, t
 		Kind:     kind,
 		DueDate:  dueDate,
 		RemindAt: remindAt,
-		Overdue:  dueDate != "" && dueDate < today,
+		Overdue:  day != "" && day < today,
 	}
 }
 
