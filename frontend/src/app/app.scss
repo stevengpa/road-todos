@@ -14,12 +14,24 @@
 .sidebar {
   width: 248px;
   flex: none;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
   background: var(--bg-2);
   border-right: 1px solid var(--border);
-  padding: 0 12px 14px;
+  transition:
+    width 0.22s ease,
+    border-color 0.22s ease;
   --wails-draggable: drag;
+}
+.sidebar.collapsed {
+  width: 0;
+  border-right-color: transparent;
+}
+.sidebar-inner {
+  width: 248px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 14px;
 }
 .sidebar button,
 .sidebar input {
@@ -32,6 +44,22 @@
   gap: 11px;
   padding: 22px 8px 20px;
   margin-top: 20px;
+}
+
+.collapse-btn {
+  margin-left: auto;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--text-faint);
+  transition: 0.15s;
+}
+.collapse-btn:hover {
+  color: var(--text);
+  background: var(--hover);
 }
 
 .logo {
@@ -257,11 +285,32 @@
   align-items: center;
   gap: 12px;
   padding: 14px 24px 10px;
+  transition: padding-left 0.22s ease;
   --wails-draggable: drag;
+}
+.topbar.collapsed {
+  padding-left: 92px;
 }
 .topbar button,
 .topbar input {
   --wails-draggable: no-drag;
+}
+
+.sidebar-toggle {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--text-dim);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: 0.15s;
+}
+.sidebar-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 
 .search {

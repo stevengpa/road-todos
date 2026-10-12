@@ -56,6 +56,9 @@ export class App implements OnInit, OnDestroy {
   protected readonly boardDialogOpen = signal(false);
   protected readonly editingBoard = signal<BoardModel | null>(null);
 
+  // Sidebar visibility, remembered between launches.
+  protected readonly collapsed = signal(readCollapsed());
+
   // Card modal opened from a smart view. The dialog needs the card's own board
   // and that board's stages, which may differ from the currently selected board.
   protected readonly cardDialogOpen = signal(false);
@@ -118,6 +121,16 @@ export class App implements OnInit, OnDestroy {
 
   protected toggleCompleted(): void {
     void this.state.toggleShowCompleted();
+  }
+
+  protected toggleSidebar(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    try {
+      localStorage.setItem('road-todo.sidebar', next ? 'collapsed' : 'open');
+    } catch {
+      /* storage unavailable; state stays in-memory */
+    }
   }
 
   protected openNewBoard(): void {
@@ -229,5 +242,13 @@ export class App implements OnInit, OnDestroy {
   protected async onDeleteViewCard(id: number): Promise<void> {
     await this.state.deleteCard(id);
     this.closeViewCard();
+  }
+}
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem('road-todo.sidebar') === 'collapsed';
+  } catch {
+    return false;
   }
 }
