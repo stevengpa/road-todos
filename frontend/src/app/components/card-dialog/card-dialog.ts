@@ -150,8 +150,4 @@ export class CardDialog implements OnInit {
   protected close(): void {
     this.closed.emit();
   }
-
-  protected stop(event: Event): void {
-    event.stopPropagation();
-  }
 }
