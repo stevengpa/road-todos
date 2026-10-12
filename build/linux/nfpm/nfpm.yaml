@@ -1,7 +1,8 @@
-# nfpm configuration for building a Fedora/RHEL .rpm (and .deb) package.
+# nfpm configuration for building Fedora/RHEL .rpm and Debian/Ubuntu .deb packages.
 #
 #   wails build -tags webkit2_41
 #   nfpm package -f build/linux/nfpm/nfpm.yaml -p rpm
+#   nfpm package -f build/linux/nfpm/nfpm.yaml -p deb
 #
 # Docs: https://nfpm.goreleaser.com/configuration/
 name: road-todo
@@ -17,9 +18,17 @@ description: |
 vendor: road-todo
 license: MIT
 
+# Dependency names differ between RPM and DEB; the defaults below target RPM and
+# the "overrides" block rewrites them for DEB.
 depends:
   - gtk3
   - webkit2gtk4.1
+
+overrides:
+  deb:
+    depends:
+      - libgtk-3-0
+      - libwebkit2gtk-4.1-0
 
 contents:
   - src: build/bin/road-todo

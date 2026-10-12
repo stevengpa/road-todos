@@ -1,2 +1,5 @@
-1f88f3345de15af6efe47a6943d463bc41b19961dfda14dc267aa289e3158f6d  RoadToDos-1.0.0-macos-universal.dmg
-674eae9c0e976a27ecf050919afb604a6db5a766bab75cc32ea5812e73d3c131  RoadToDos-1.0.0-fedora-x86_64.rpm
+502145767b15da3baa15ad975fb38fceba1deaa553f336ca4cc01d0e4fb91d73  RoadToDos-1.0.0-macos-universal.dmg
+c6435e0834d21ef5fd205d731ce3f4e5bff8afa3b7db84cee162035182971685  RoadToDos-1.0.0-fedora-x86_64.rpm
+11a3d93f2938b8c317365a181201d8831d935694b9a45a02c713927e6ec73faa  RoadToDos-1.0.0-debian-amd64.deb
+62435d9c7c3b7458398e67e6843878c55f93bc414b43a5fb6bb7d397eacc8833  RoadToDos-1.0.0-windows-amd64-installer.exe
+9367423f8250c397a08615b118855ba7163e6190b9cb07920d56ac33bf68a0cf  RoadToDos-1.0.0-windows-amd64-portable.zip
