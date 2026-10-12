@@ -174,6 +174,14 @@ export class App implements OnInit, OnDestroy {
     return SMART_VIEWS.find((v) => v.key === view)?.label ?? '';
   }
 
+  // Title for whichever list the main area is showing (a smart view or a day).
+  protected listTitle(): string {
+    const date = this.state.activeDate();
+    if (date) return formatDue(date);
+    const view = this.state.activeView();
+    return view ? this.viewLabel(view) : '';
+  }
+
   protected boardName(card: Card): string {
     return this.state.boards().find((b) => b.id === card.boardId)?.name ?? '';
   }

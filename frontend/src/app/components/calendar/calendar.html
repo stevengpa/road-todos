@@ -21,18 +21,21 @@
 
   <div class="cal-grid cal-days">
     @for (d of days(); track d.key) {
-      <span
+      <button
+        type="button"
         class="cal-day"
         [class.muted]="!d.inMonth"
         [class.today]="d.isToday"
+        [class.selected]="activeDate() === d.key"
         [class.has-due]="d.dueCount > 0"
         [title]="d.dueCount ? (d.dueCount + (d.dueCount === 1 ? ' task due' : ' tasks due')) : ''"
+        (click)="selectDay(d.key)"
       >
         {{ d.day }}
         @if (d.dueCount) {
           <span class="cal-dot"></span>
         }
-      </span>
+      </button>
     }
   </div>
 </div>

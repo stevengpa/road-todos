@@ -33,14 +33,18 @@ export class Calendar {
   protected readonly weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   protected readonly cursor = signal(firstOfMonth(new Date()));
 
+  // The day currently being inspected, so the grid can highlight it.
+  protected readonly activeDate = this.state.activeDate;
+
   protected readonly monthLabel = computed(() =>
     this.cursor().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
   );
 
-  // How many open tasks fall on each day, so the grid can flag busy dates.
+  // How many open tasks fall on each day (across every board), so the grid can
+  // flag busy dates and clicking one shows the matching global list.
   private readonly dueCounts = computed<Map<string, number>>(() => {
     const counts = new Map<string, number>();
-    for (const card of this.state.boardCards()) {
+    for (const card of this.state.cards()) {
       if (card.completed || !card.dueDate) continue;
       const key = card.dueDate.slice(0, 10);
       counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -82,5 +86,9 @@ export class Calendar {
 
   protected goToday(): void {
     this.cursor.set(firstOfMonth(new Date()));
+  }
+
+  protected selectDay(key: string): void {
+    this.state.selectDate(key);
   }
 }

@@ -182,10 +182,10 @@
         <p>Create your first board to organize tasks into stages.</p>
         <button class="btn primary" (click)="openNewBoard()">Create a board</button>
       </div>
-    } @else if (state.activeView(); as view) {
+    } @else if (state.activeView() || state.activeDate()) {
       <section class="smart" aria-label="Filtered tasks">
         <header class="smart-head">
-          <h2>{{ viewLabel(view) }}</h2>
+          <h2>{{ listTitle() }}</h2>
           <span class="smart-count">{{ state.activeViewCards().length }}</span>
         </header>
 

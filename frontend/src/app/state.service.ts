@@ -48,6 +48,10 @@ export class StateService {
   // a dedicated list instead of the current board. Selecting a board clears it.
   readonly activeView = signal<SmartView | null>(null);
 
+  // A specific calendar day selected from the sidebar. Shares the same list
+  // presentation as the smart views but filters by an exact due date.
+  readonly activeDate = signal<string | null>(null);
+
   // Per-board layout preference, keyed by board id. The active view is derived
   // from whichever board is currently selected.
   readonly boardViews = signal<ReadonlyMap<number, View>>(new Map());
@@ -148,12 +152,17 @@ export class StateService {
 
   readonly activeViewCards = computed<Card[]>(() => {
     const view = this.activeView();
-    if (!view) return EMPTY_CARDS;
+    const date = this.activeDate();
+    if (!view && !date) return EMPTY_CARDS;
     const today = localDayKey();
     const next = localDayKey(new Date(), 7);
     const q = this.search().trim().toLowerCase();
     return this.cards()
-      .filter((c) => this.matchesView(c, view, today, next) && (!q || this.matches(c, q)))
+      .filter((c) => {
+        if (q && !this.matches(c, q)) return false;
+        if (date) return !c.completed && dayKey(c.dueDate) === date;
+        return this.matchesView(c, view as SmartView, today, next);
+      })
       .sort(
         (a, b) =>
           (a.dueDate || '9999').localeCompare(b.dueDate || '9999') ||
@@ -163,7 +172,13 @@ export class StateService {
   });
 
   selectView(view: SmartView): void {
+    this.activeDate.set(null);
     this.activeView.set(this.activeView() === view ? null : view);
+  }
+
+  selectDate(date: string): void {
+    this.activeView.set(null);
+    this.activeDate.set(this.activeDate() === date ? null : date);
   }
 
   // Cards grouped by column (respecting the active search) so the template can
@@ -298,6 +313,7 @@ export class StateService {
 
   selectBoard(id: number): void {
     this.activeView.set(null);
+    this.activeDate.set(null);
     this.currentBoardId.set(id);
   }
 
@@ -310,6 +326,7 @@ export class StateService {
     if (!board) return;
     await this.reload();
     this.activeView.set(null);
+    this.activeDate.set(null);
     this.currentBoardId.set(board.id);
   }
 
