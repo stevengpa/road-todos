@@ -15,6 +15,25 @@
 
     <app-calendar />
 
+    <div class="side-label">Views</div>
+    <nav class="view-list">
+      @for (v of smartViews; track v.key) {
+        <button
+          class="view-item"
+          [class.active]="state.activeView() === v.key"
+          (click)="selectView(v.key)"
+        >
+          <span class="vi-icon">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path [attr.d]="v.icon" />
+            </svg>
+          </span>
+          <span class="bi-name">{{ v.label }}</span>
+          <span class="bi-count">{{ viewCount(v.key) }}</span>
+        </button>
+      }
+    </nav>
+
     <div class="side-label">Boards</div>
     <nav class="board-list">
       @for (b of state.boards(); track b.id) {
@@ -159,6 +178,53 @@
         <p>Create your first board to organize tasks into stages.</p>
         <button class="btn primary" (click)="openNewBoard()">Create a board</button>
       </div>
+    } @else if (state.activeView(); as view) {
+      <section class="smart" aria-label="Filtered tasks">
+        <header class="smart-head">
+          <h2>{{ viewLabel(view) }}</h2>
+          <span class="smart-count">{{ state.activeViewCards().length }}</span>
+        </header>
+
+        @if (state.activeViewCards().length === 0) {
+          <div class="center-state">
+            <span class="empty-illustration">
+              <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </span>
+            <p>Nothing here right now.</p>
+          </div>
+        } @else {
+          <ul class="smart-list">
+            @for (card of state.activeViewCards(); track card.id) {
+              <li class="smart-item" [class.overdue]="isOverdue(card)">
+                <button
+                  class="si-check"
+                  (click)="toggleCard(card)"
+                  [title]="'Mark complete'"
+                  aria-label="Mark complete"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </button>
+                <button class="si-main" (click)="openCardBoard(card)" title="Open board">
+                  <span class="si-title">{{ card.title }}</span>
+                  <span class="si-meta">
+                    <span class="si-board">{{ boardName(card) }}</span>
+                    <span class="si-sep">·</span>
+                    <span class="si-stage">{{ columnName(card) }}</span>
+                  </span>
+                </button>
+                @if (card.dueDate) {
+                  <span class="si-due" [class.overdue]="isOverdue(card)">{{ dueLabel(card.dueDate) }}</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
     } @else {
       <app-board (edit)="openEditBoard()" />
     }

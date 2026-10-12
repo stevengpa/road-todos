@@ -14,6 +14,51 @@ export type BoardView = models.BoardView;
 export type Theme = 'dark' | 'light';
 export type View = 'kanban' | 'table';
 
+export type SmartView = 'today' | 'overdue' | 'noDue' | 'nextWeek';
+
+export interface SmartViewOption {
+  key: SmartView;
+  label: string;
+  icon: string;
+}
+
+export const SMART_VIEWS: SmartViewOption[] = [
+  {
+    key: 'today',
+    label: 'Today',
+    icon: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8',
+  },
+  {
+    key: 'overdue',
+    label: 'Overdue',
+    icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 14h-2v2h2v-2Zm0-8h-2v6h2V8Z',
+  },
+  {
+    key: 'noDue',
+    label: 'No due date',
+    icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.3 3.7L5.7 18.3A8 8 0 0 1 18.3 5.7ZM4 12a8 8 0 0 1 13.3-6.3L4.7 18.3A7.96 7.96 0 0 1 4 12Z',
+  },
+  {
+    key: 'nextWeek',
+    label: 'Next 7 days',
+    icon: 'M8 2v2M16 2v2M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3H3V5Zm0 5h18v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9Zm9 1-3 3h2v3h2v-3h2l-3-3Z',
+  },
+];
+
+/** Local calendar date ("YYYY-MM-DD") for a date, optionally offset by days. */
+export function localDayKey(date = new Date(), offsetDays = 0): string {
+  const d = new Date(date);
+  d.setDate(d.getDate() + offsetDays);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+/** Calendar-date portion of a stored due value, ignoring any time component. */
+export function dayKey(value: string): string {
+  return (value || '').slice(0, 10);
+}
+
 export type Priority = 'low' | 'medium' | 'high';
 
 export interface PriorityMeta {

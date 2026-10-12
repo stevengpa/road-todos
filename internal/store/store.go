@@ -701,14 +701,14 @@ func (s *Store) RemindersToFire() ([]models.Reminder, error) {
 		customReached := remindAt != "" && remindAt <= nowStamp && remindNotified != remindAt
 		if customReached {
 			custom = append(custom, reminderFor2(id, boardID, columnID, title, dueDate, remindAt,
-				models.ReminderKindCustom, today))
+				models.ReminderKindCustom, today, nowStamp))
 			continue
 		}
 
-		dueReached := dueDate != "" && dueDay(dueDate) <= today && dueNotified != dueDate
+		dueReached := dueDate != "" && dueReachedAt(dueDate, today, nowStamp) && dueNotified != dueDate
 		if dueReached {
 			due = append(due, reminderFor2(id, boardID, columnID, title, dueDate, remindAt,
-				models.ReminderKindDue, today))
+				models.ReminderKindDue, today, nowStamp))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -734,16 +734,15 @@ func (s *Store) MarkReminded(cardID int64, kind, value string) error {
 
 func reminderFor(id, boardID, columnID int64, title, dueDate, remindAt, today, nowStamp string) (models.Reminder, bool) {
 	if remindAt != "" && remindAt <= nowStamp {
-		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindCustom, today), true
+		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindCustom, today, nowStamp), true
 	}
-	if day := dueDay(dueDate); day != "" && day <= today {
-		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindDue, today), true
+	if dueDate != "" && dueReachedAt(dueDate, today, nowStamp) {
+		return reminderFor2(id, boardID, columnID, title, dueDate, remindAt, models.ReminderKindDue, today, nowStamp), true
 	}
 	return models.Reminder{}, false
 }
 
-func reminderFor2(id, boardID, columnID int64, title, dueDate, remindAt, kind, today string) models.Reminder {
-	day := dueDay(dueDate)
+func reminderFor2(id, boardID, columnID int64, title, dueDate, remindAt, kind, today, nowStamp string) models.Reminder {
 	return models.Reminder{
 		ID:       id,
 		BoardID:  boardID,
@@ -752,8 +751,28 @@ func reminderFor2(id, boardID, columnID int64, title, dueDate, remindAt, kind, t
 		Kind:     kind,
 		DueDate:  dueDate,
 		RemindAt: remindAt,
-		Overdue:  day != "" && day < today,
+		Overdue:  dueIsOverdue(dueDate, today, nowStamp),
 	}
+}
+
+// dueReachedAt reports whether a due value has arrived. Timed values fire the
+// moment their instant passes; date-only values fire at the start of their day.
+func dueReachedAt(dueDate, today, nowStamp string) bool {
+	if _, hasTime, ok := parseDueTime(dueDate); ok && hasTime {
+		return dueDate <= nowStamp
+	}
+	return dueDay(dueDate) <= today
+}
+
+// dueIsOverdue reports whether a due value is strictly in the past. A timed
+// value is overdue once its instant passes; a date-only value only once its
+// whole day has elapsed.
+func dueIsOverdue(dueDate, today, nowStamp string) bool {
+	if _, hasTime, ok := parseDueTime(dueDate); ok && hasTime {
+		return dueDate < nowStamp
+	}
+	day := dueDay(dueDate)
+	return day != "" && day < today
 }
 
 // ---------------------------------------------------------------------------

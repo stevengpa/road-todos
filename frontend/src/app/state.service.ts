@@ -11,9 +11,13 @@ import {
   ColumnInput,
   Reminder,
   Settings,
+  SMART_VIEWS,
+  SmartView,
   Snapshot,
   Theme,
   View,
+  dayKey,
+  localDayKey,
 } from './models';
 
 export interface BoardStat {
@@ -39,6 +43,10 @@ export class StateService {
   readonly dbPath = signal('');
   readonly theme = signal<Theme>('dark');
   readonly showCompleted = signal(false);
+
+  // The active smart view (Agenda-style filters). When set, the main area shows
+  // a dedicated list instead of the current board. Selecting a board clears it.
+  readonly activeView = signal<SmartView | null>(null);
 
   // Per-board layout preference, keyed by board id. The active view is derived
   // from whichever board is currently selected.
@@ -96,6 +104,67 @@ export class StateService {
     }
     return map;
   });
+
+  // -------------------------------------------------------------------------
+  // Smart views
+  // -------------------------------------------------------------------------
+
+  private matchesView(card: Card, view: SmartView, today: string, next: string): boolean {
+    if (card.completed) return false;
+    const day = dayKey(card.dueDate);
+    switch (view) {
+      case 'today':
+        return day === today;
+      case 'overdue':
+        return this.isOverdueDue(card.dueDate, today);
+      case 'noDue':
+        return card.dueDate === '';
+      case 'nextWeek':
+        return day !== '' && day > today && day <= next;
+    }
+  }
+
+  // A timed due value is overdue once its instant passes; a date-only value is
+  // only overdue after its whole day has elapsed.
+  private isOverdueDue(dueDate: string, today: string): boolean {
+    if (!dueDate) return false;
+    if (dueDate.includes('T')) return new Date(dueDate).getTime() < Date.now();
+    return dayKey(dueDate) < today;
+  }
+
+  readonly viewCounts = computed<Map<SmartView, number>>(() => {
+    const today = localDayKey();
+    const next = localDayKey(new Date(), 7);
+    const map = new Map<SmartView, number>(SMART_VIEWS.map((v) => [v.key, 0]));
+    for (const card of this.cards()) {
+      for (const v of SMART_VIEWS) {
+        if (this.matchesView(card, v.key, today, next)) {
+          map.set(v.key, (map.get(v.key) ?? 0) + 1);
+        }
+      }
+    }
+    return map;
+  });
+
+  readonly activeViewCards = computed<Card[]>(() => {
+    const view = this.activeView();
+    if (!view) return EMPTY_CARDS;
+    const today = localDayKey();
+    const next = localDayKey(new Date(), 7);
+    const q = this.search().trim().toLowerCase();
+    return this.cards()
+      .filter((c) => this.matchesView(c, view, today, next) && (!q || this.matches(c, q)))
+      .sort(
+        (a, b) =>
+          (a.dueDate || '9999').localeCompare(b.dueDate || '9999') ||
+          a.position - b.position ||
+          a.id - b.id,
+      );
+  });
+
+  selectView(view: SmartView): void {
+    this.activeView.set(this.activeView() === view ? null : view);
+  }
 
   // Cards grouped by column (respecting the active search) so the template can
   // look them up in O(1) instead of filtering the full list on every cycle.
@@ -228,6 +297,7 @@ export class StateService {
   }
 
   selectBoard(id: number): void {
+    this.activeView.set(null);
     this.currentBoardId.set(id);
   }
 
@@ -239,6 +309,7 @@ export class StateService {
     const board = await this.run(() => App.CreateBoard(input));
     if (!board) return;
     await this.reload();
+    this.activeView.set(null);
     this.currentBoardId.set(board.id);
   }
 

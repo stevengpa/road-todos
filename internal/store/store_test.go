@@ -456,3 +456,33 @@ func TestRemindBeforeDue(t *testing.T) {
 		t.Fatalf("expected due %q, got %q", wantDue, rolledTimed.DueDate)
 	}
 }
+
+func TestDueTimeOverdue(t *testing.T) {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	nowStamp := now.Format(reminderTimeFormat)
+
+	past := now.Add(-time.Hour).Format(reminderTimeFormat)
+	future := now.Add(time.Hour).Format(reminderTimeFormat)
+
+	if !dueIsOverdue(past, today, nowStamp) {
+		t.Fatal("a timed due in the past should be overdue")
+	}
+	if dueIsOverdue(future, today, nowStamp) {
+		t.Fatal("a timed due in the future should not be overdue")
+	}
+	if !dueReachedAt(past, today, nowStamp) {
+		t.Fatal("a timed due in the past should have been reached")
+	}
+	if dueReachedAt(future, today, nowStamp) {
+		t.Fatal("a timed due in the future should not have been reached")
+	}
+
+	// Date-only values are neither overdue nor unreached until the day rolls over.
+	if dueIsOverdue(today, today, nowStamp) {
+		t.Fatal("a date-only due today should not be overdue")
+	}
+	if !dueReachedAt(today, today, nowStamp) {
+		t.Fatal("a date-only due today should count as reached")
+	}
+}

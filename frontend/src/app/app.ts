@@ -15,7 +15,18 @@ import { StateService } from './state.service';
 import { Board } from './components/board/board';
 import { BoardDialog } from './components/board-dialog/board-dialog';
 import { Calendar } from './components/calendar/calendar';
-import { BoardInput, Board as BoardModel, Reminder, formatDateTime, formatDue } from './models';
+import {
+  BoardInput,
+  Board as BoardModel,
+  Card,
+  Reminder,
+  SMART_VIEWS,
+  SmartView,
+  dayKey,
+  formatDateTime,
+  formatDue,
+  localDayKey,
+} from './models';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +38,9 @@ import { BoardInput, Board as BoardModel, Reminder, formatDateTime, formatDue } 
 export class App implements OnInit, OnDestroy {
   protected readonly state = inject(StateService);
   private readonly zone = inject(NgZone);
+
+  protected readonly smartViews = SMART_VIEWS;
+  protected readonly dueLabel = formatDue;
 
   protected readonly boardDialogOpen = signal(false);
   protected readonly editingBoard = signal<BoardModel | null>(null);
@@ -119,5 +133,41 @@ export class App implements OnInit, OnDestroy {
 
   protected countFor(boardId: number): number {
     return this.state.boardCounts().get(boardId)?.total ?? 0;
+  }
+
+  // -- smart views ----------------------------------------------------------
+
+  protected selectView(view: SmartView): void {
+    this.state.selectView(view);
+  }
+
+  protected viewCount(view: SmartView): number {
+    return this.state.viewCounts().get(view) ?? 0;
+  }
+
+  protected viewLabel(view: SmartView): string {
+    return SMART_VIEWS.find((v) => v.key === view)?.label ?? '';
+  }
+
+  protected boardName(card: Card): string {
+    return this.state.boards().find((b) => b.id === card.boardId)?.name ?? '';
+  }
+
+  protected columnName(card: Card): string {
+    return this.state.columns().find((c) => c.id === card.columnId)?.name ?? '';
+  }
+
+  protected isOverdue(card: Card): boolean {
+    if (!card.dueDate) return false;
+    if (card.dueDate.includes('T')) return new Date(card.dueDate).getTime() < Date.now();
+    return dayKey(card.dueDate) < localDayKey();
+  }
+
+  protected openCardBoard(card: Card): void {
+    this.state.selectBoard(card.boardId);
+  }
+
+  protected toggleCard(card: Card): void {
+    void this.state.toggleComplete(card.id);
   }
 }
