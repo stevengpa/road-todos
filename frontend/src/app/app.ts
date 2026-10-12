@@ -4,6 +4,7 @@ import {
   NgZone,
   OnDestroy,
   OnInit,
+  computed,
   effect,
   inject,
   signal,
@@ -15,10 +16,13 @@ import { StateService } from './state.service';
 import { Board } from './components/board/board';
 import { BoardDialog } from './components/board-dialog/board-dialog';
 import { Calendar } from './components/calendar/calendar';
+import { CardDialog } from './components/card-dialog/card-dialog';
 import {
   BoardInput,
   Board as BoardModel,
   Card,
+  CardInput,
+  Column,
   Reminder,
   SMART_VIEWS,
   SmartView,
@@ -26,11 +30,15 @@ import {
   formatDateTime,
   formatDue,
   localDayKey,
+  offsetLabel,
+  parseTags,
+  priorityMeta,
+  recurrenceLabel,
 } from './models';
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, Board, BoardDialog, Calendar],
+  imports: [FormsModule, Board, BoardDialog, Calendar, CardDialog],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,9 +49,26 @@ export class App implements OnInit, OnDestroy {
 
   protected readonly smartViews = SMART_VIEWS;
   protected readonly dueLabel = formatDue;
+  protected readonly priority = priorityMeta;
+  protected readonly tags = parseTags;
+  protected readonly repeat = recurrenceLabel;
 
   protected readonly boardDialogOpen = signal(false);
   protected readonly editingBoard = signal<BoardModel | null>(null);
+
+  // Card modal opened from a smart view. The dialog needs the card's own board
+  // and that board's stages, which may differ from the currently selected board.
+  protected readonly cardDialogOpen = signal(false);
+  protected readonly editingViewCard = signal<Card | null>(null);
+
+  protected readonly viewCardColumns = computed<Column[]>(() => {
+    const card = this.editingViewCard();
+    if (!card) return [];
+    return this.state
+      .columns()
+      .filter((c) => c.boardId === card.boardId)
+      .sort((a, b) => a.position - b.position);
+  });
 
   private offReminder?: () => void;
   private onFocus?: () => void;
@@ -163,11 +188,38 @@ export class App implements OnInit, OnDestroy {
     return dayKey(card.dueDate) < localDayKey();
   }
 
-  protected openCardBoard(card: Card): void {
-    this.state.selectBoard(card.boardId);
+  protected remindText(card: Card): string {
+    if (card.remindBefore > 0) return `${offsetLabel(card.remindBefore)} before due`;
+    return formatDateTime(card.remindAt);
   }
 
   protected toggleCard(card: Card): void {
     void this.state.toggleComplete(card.id);
+  }
+
+  // -- card modal from a view -----------------------------------------------
+
+  protected openViewCard(card: Card): void {
+    this.editingViewCard.set(card);
+    this.cardDialogOpen.set(true);
+  }
+
+  protected closeViewCard(): void {
+    this.cardDialogOpen.set(false);
+    this.editingViewCard.set(null);
+  }
+
+  protected async onSaveViewCard(input: CardInput): Promise<void> {
+    if (input.id) {
+      await this.state.updateCard(input);
+    } else {
+      await this.state.createCard(input);
+    }
+    this.closeViewCard();
+  }
+
+  protected async onDeleteViewCard(id: number): Promise<void> {
+    await this.state.deleteCard(id);
+    this.closeViewCard();
   }
 }
