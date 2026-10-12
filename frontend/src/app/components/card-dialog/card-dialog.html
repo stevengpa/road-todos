@@ -87,6 +87,32 @@
       </div>
 
       <div class="field">
+        <span class="label">Repeat <span class="hint">rolls over when completed</span></span>
+        <select class="input" [(ngModel)]="recurrence">
+          @for (opt of recurrenceOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      @if (isCustomRepeat()) {
+        <div class="grid-2">
+          <label class="field">
+            <span class="label">Every</span>
+            <input class="input" type="number" min="1" step="1" [(ngModel)]="recurInterval" />
+          </label>
+          <label class="field">
+            <span class="label">Unit</span>
+            <select class="input" [(ngModel)]="recurUnit">
+              @for (u of recurUnits; track u.value) {
+                <option [ngValue]="u.value">{{ u.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      }
+
+      <div class="field">
         <span class="label">Priority</span>
         <div class="segmented">
           @for (p of priorities; track p) {

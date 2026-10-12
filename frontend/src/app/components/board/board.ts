@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { StateService } from '../../state.service';
 import { CardDialog } from '../card-dialog/card-dialog';
-import { Board as BoardModel, Card, CardInput, Column, View, parseTags, priorityMeta } from '../../models';
+import { Board as BoardModel, Card, CardInput, Column, View, parseTags, priorityMeta, recurrenceLabel } from '../../models';
 
 @Component({
   selector: 'app-board',
@@ -192,11 +192,12 @@ export class Board {
 
   protected priority = priorityMeta;
   protected tags = parseTags;
+  protected repeat = recurrenceLabel;
 
   protected dueLabel(value: string): string {
     const date = new Date(`${value}T00:00:00`);
     if (isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   protected remindLabel(value: string): string {
@@ -205,6 +206,7 @@ export class Board {
     return date.toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
     });

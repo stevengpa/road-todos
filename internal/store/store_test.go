@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"path/filepath"
 	"testing"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -33,6 +34,7 @@ func newTestStore(t *testing.T) *Store {
 		column_id INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
 		title TEXT, description TEXT, priority TEXT, completed INTEGER, due_date TEXT, tags TEXT,
 		remind_at TEXT NOT NULL DEFAULT '', remind_notified TEXT NOT NULL DEFAULT '', due_notified TEXT NOT NULL DEFAULT '',
+		recurrence TEXT NOT NULL DEFAULT '', recur_interval INTEGER NOT NULL DEFAULT 1, recur_unit TEXT NOT NULL DEFAULT 'day',
 		position INTEGER, created_at TEXT, updated_at TEXT);
 	CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 	CREATE TABLE board_settings (
@@ -321,5 +323,66 @@ func TestReminders(t *testing.T) {
 	after, _ := s.PendingReminders()
 	if len(after) != 0 {
 		t.Fatalf("expected no pending after completion, got %+v", after)
+	}
+}
+
+func TestRecurringRollOver(t *testing.T) {
+	s := newTestStore(t)
+
+	board, _ := s.CreateBoard(models.BoardInput{Name: "R", Color: "#fff"})
+	cols, _ := s.listColumns(board.ID)
+
+	// A daily task past its due date should roll forward to the future when
+	// completed and stay open.
+	card, err := s.CreateCard(models.CardInput{
+		BoardID:    board.ID,
+		ColumnID:   cols[0].ID,
+		Title:      "Daily",
+		DueDate:    "2000-01-01",
+		RemindAt:   "2000-01-01T09:00",
+		Recurrence: models.RecurrenceDaily,
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	rolled, err := s.ToggleComplete(card.ID)
+	if err != nil {
+		t.Fatalf("toggle: %v", err)
+	}
+	if rolled.Completed {
+		t.Fatal("recurring task should stay open after completion")
+	}
+	if rolled.DueDate <= time.Now().Format("2006-01-02") {
+		t.Fatalf("expected a future due date, got %q", rolled.DueDate)
+	}
+	if rolled.RemindAt == "" || rolled.RemindAt <= "2000-01-01T09:00" {
+		t.Fatalf("expected the reminder to advance, got %q", rolled.RemindAt)
+	}
+	if rolled.Recurrence != models.RecurrenceDaily {
+		t.Fatalf("recurrence should be preserved, got %q", rolled.Recurrence)
+	}
+
+	// A custom every-3-weeks task advances accordingly.
+	custom, _ := s.CreateCard(models.CardInput{
+		BoardID:       board.ID,
+		ColumnID:      cols[0].ID,
+		Title:         "Custom",
+		DueDate:       time.Now().Format("2006-01-02"),
+		Recurrence:    models.RecurrenceCustom,
+		RecurInterval: 3,
+		RecurUnit:     models.RecurUnitWeek,
+	})
+	next, _ := s.ToggleComplete(custom.ID)
+	want := time.Now().AddDate(0, 0, 21).Format("2006-01-02")
+	if next.DueDate != want {
+		t.Fatalf("expected %q, got %q", want, next.DueDate)
+	}
+
+	// A non-recurring task still toggles to completed.
+	plain, _ := s.CreateCard(models.CardInput{BoardID: board.ID, ColumnID: cols[0].ID, Title: "Plain"})
+	done, _ := s.ToggleComplete(plain.ID)
+	if !done.Completed {
+		t.Fatal("non-recurring task should be marked complete")
 	}
 }

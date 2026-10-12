@@ -442,6 +442,22 @@
   padding: 2px 8px;
 }
 
+.repeat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-dim);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.repeat svg {
+  color: var(--text-faint);
+}
+
 .card.done {
   opacity: 0.66;
 }
@@ -571,6 +587,9 @@
 }
 
 .g-tags .tag {
+  margin-right: 4px;
+}
+.g-tags .repeat {
   margin-right: 4px;
 }
 

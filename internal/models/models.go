@@ -22,33 +22,58 @@ type Column struct {
 
 // Card is a todo item inside a column.
 type Card struct {
-	ID          int64  `json:"id"`
-	BoardID     int64  `json:"boardId"`
-	ColumnID    int64  `json:"columnId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"`
-	Completed   bool   `json:"completed"`
-	DueDate     string `json:"dueDate"`
-	RemindAt    string `json:"remindAt"`
-	Tags        string `json:"tags"`
-	Position    int    `json:"position"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID            int64  `json:"id"`
+	BoardID       int64  `json:"boardId"`
+	ColumnID      int64  `json:"columnId"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	Priority      string `json:"priority"`
+	Completed     bool   `json:"completed"`
+	DueDate       string `json:"dueDate"`
+	RemindAt      string `json:"remindAt"`
+	Tags          string `json:"tags"`
+	Recurrence    string `json:"recurrence"`
+	RecurInterval int    `json:"recurInterval"`
+	RecurUnit     string `json:"recurUnit"`
+	Position      int    `json:"position"`
+	CreatedAt     string `json:"createdAt"`
+	UpdatedAt     string `json:"updatedAt"`
 }
 
 // CardInput carries the editable fields used when creating or updating a card.
 type CardInput struct {
-	ID          int64  `json:"id"`
-	BoardID     int64  `json:"boardId"`
-	ColumnID    int64  `json:"columnId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"`
-	DueDate     string `json:"dueDate"`
-	RemindAt    string `json:"remindAt"`
-	Tags        string `json:"tags"`
+	ID            int64  `json:"id"`
+	BoardID       int64  `json:"boardId"`
+	ColumnID      int64  `json:"columnId"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	Priority      string `json:"priority"`
+	DueDate       string `json:"dueDate"`
+	RemindAt      string `json:"remindAt"`
+	Tags          string `json:"tags"`
+	Recurrence    string `json:"recurrence"`
+	RecurInterval int    `json:"recurInterval"`
+	RecurUnit     string `json:"recurUnit"`
 }
+
+// Recurrence presets stored on a card. An empty value means the task does not
+// repeat. The "custom" preset uses RecurInterval/RecurUnit.
+const (
+	RecurrenceNone    = ""
+	RecurrenceDaily   = "daily"
+	RecurrenceWeekly  = "weekly"
+	RecurrenceMonthly = "monthly"
+	RecurrenceYearly  = "yearly"
+	RecurrenceCustom  = "custom"
+)
+
+// Recurrence units used by the custom preset.
+const (
+	RecurUnitDay   = "day"
+	RecurUnitWeek  = "week"
+	RecurUnitMonth = "month"
+	RecurUnitYear  = "year"
+)
 
 // Reminder kinds reported to the frontend.
 const (

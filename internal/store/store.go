@@ -255,7 +255,8 @@ func (s *Store) ReorderColumns(boardID int64, ids []int64) error {
 
 func (s *Store) listCards(boardID int64) ([]models.Card, error) {
 	query := `SELECT id, board_id, column_id, title, description, priority, completed,
-	                 due_date, remind_at, tags, position, created_at, updated_at FROM cards`
+	                 due_date, remind_at, tags, recurrence, recur_interval, recur_unit,
+	                 position, created_at, updated_at FROM cards`
 	args := []any{}
 	if boardID > 0 {
 		query += ` WHERE board_id = ?`
@@ -274,7 +275,8 @@ func (s *Store) listCards(boardID int64) ([]models.Card, error) {
 		var c models.Card
 		var completed int
 		if err := rows.Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Priority,
-			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Position, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Recurrence, &c.RecurInterval, &c.RecurUnit,
+			&c.Position, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
 		c.Completed = completed == 1
@@ -288,9 +290,11 @@ func (s *Store) getCard(id int64) (models.Card, error) {
 	var completed int
 	err := s.db.QueryRow(
 		`SELECT id, board_id, column_id, title, description, priority, completed,
-		        due_date, remind_at, tags, position, created_at, updated_at FROM cards WHERE id = ?`, id).
+		        due_date, remind_at, tags, recurrence, recur_interval, recur_unit,
+		        position, created_at, updated_at FROM cards WHERE id = ?`, id).
 		Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Priority,
-			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Position, &c.CreatedAt, &c.UpdatedAt)
+			&completed, &c.DueDate, &c.RemindAt, &c.Tags, &c.Recurrence, &c.RecurInterval, &c.RecurUnit,
+			&c.Position, &c.CreatedAt, &c.UpdatedAt)
 	c.Completed = completed == 1
 	return c, err
 }
@@ -303,6 +307,7 @@ func (s *Store) CreateCard(in models.CardInput) (models.Card, error) {
 	if in.Priority == "" {
 		in.Priority = "medium"
 	}
+	normalizeRecurrence(&in)
 
 	var pos int
 	if err := s.db.QueryRow(
@@ -314,9 +319,11 @@ func (s *Store) CreateCard(in models.CardInput) (models.Card, error) {
 	ts := now()
 	res, err := s.db.Exec(
 		`INSERT INTO cards (board_id, column_id, title, description, priority, completed,
-		                    due_date, remind_at, tags, position, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
-		in.BoardID, in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags, pos, ts, ts)
+		                    due_date, remind_at, tags, recurrence, recur_interval, recur_unit,
+		                    position, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		in.BoardID, in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags,
+		in.Recurrence, in.RecurInterval, in.RecurUnit, pos, ts, ts)
 	if err != nil {
 		return models.Card{}, err
 	}
@@ -338,10 +345,13 @@ func (s *Store) UpdateCard(in models.CardInput) (models.Card, error) {
 	if in.Priority == "" {
 		in.Priority = "medium"
 	}
+	normalizeRecurrence(&in)
 	_, err := s.db.Exec(
 		`UPDATE cards SET column_id = ?, title = ?, description = ?, priority = ?,
-		                  due_date = ?, remind_at = ?, tags = ?, updated_at = ? WHERE id = ?`,
-		in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags, now(), in.ID)
+		                  due_date = ?, remind_at = ?, tags = ?, recurrence = ?,
+		                  recur_interval = ?, recur_unit = ?, updated_at = ? WHERE id = ?`,
+		in.ColumnID, in.Title, in.Description, in.Priority, in.DueDate, in.RemindAt, in.Tags,
+		in.Recurrence, in.RecurInterval, in.RecurUnit, now(), in.ID)
 	if err != nil {
 		return models.Card{}, err
 	}
@@ -354,15 +364,149 @@ func (s *Store) DeleteCard(id int64) error {
 	return err
 }
 
-// ToggleComplete flips the completed flag.
+// ToggleComplete flips the completed flag. Completing a recurring card rolls it
+// over to its next occurrence instead of marking it done: the due date (and any
+// reminder) advances and the card stays open with fresh notification markers.
 func (s *Store) ToggleComplete(id int64) (models.Card, error) {
-	_, err := s.db.Exec(
+	card, err := s.getCard(id)
+	if err != nil {
+		return models.Card{}, err
+	}
+	if !card.Completed && card.Recurrence != models.RecurrenceNone {
+		return s.rollOverRecurring(card)
+	}
+	_, err = s.db.Exec(
 		`UPDATE cards SET completed = CASE completed WHEN 1 THEN 0 ELSE 1 END, updated_at = ? WHERE id = ?`,
 		now(), id)
 	if err != nil {
 		return models.Card{}, err
 	}
 	return s.getCard(id)
+}
+
+// rollOverRecurring advances a recurring card to its next occurrence and clears
+// the notification markers so the next reminder fires.
+func (s *Store) rollOverRecurring(card models.Card) (models.Card, error) {
+	base := card.DueDate
+	if _, ok := parseDate(base); !ok {
+		base = time.Now().Format(dateFormat)
+	}
+	next := nextOccurrence(base, card.Recurrence, card.RecurInterval, card.RecurUnit)
+
+	remind := card.RemindAt
+	if remind != "" {
+		remind = shiftDateTime(remind, daysBetween(base, next))
+	}
+
+	_, err := s.db.Exec(
+		`UPDATE cards SET due_date = ?, remind_at = ?, remind_notified = '', due_notified = ?,
+		                  updated_at = ? WHERE id = ?`,
+		next, remind, card.DueDate, now(), card.ID)
+	if err != nil {
+		return models.Card{}, err
+	}
+	_, _ = s.db.Exec(`UPDATE boards SET updated_at = ? WHERE id = ?`, now(), card.BoardID)
+	return s.getCard(card.ID)
+}
+
+const dateFormat = "2006-01-02"
+
+// normalizeRecurrence clamps a card's recurrence fields to valid values.
+func normalizeRecurrence(in *models.CardInput) {
+	switch in.Recurrence {
+	case models.RecurrenceDaily, models.RecurrenceWeekly, models.RecurrenceMonthly, models.RecurrenceYearly:
+		in.RecurInterval = 1
+		in.RecurUnit = models.RecurUnitDay
+	case models.RecurrenceCustom:
+		if in.RecurInterval < 1 {
+			in.RecurInterval = 1
+		}
+		switch in.RecurUnit {
+		case models.RecurUnitDay, models.RecurUnitWeek, models.RecurUnitMonth, models.RecurUnitYear:
+		default:
+			in.RecurUnit = models.RecurUnitDay
+		}
+	default:
+		in.Recurrence = models.RecurrenceNone
+		in.RecurInterval = 1
+		in.RecurUnit = models.RecurUnitDay
+	}
+}
+
+// parseDate parses a plain calendar date in local time.
+func parseDate(value string) (time.Time, bool) {
+	if value == "" {
+		return time.Time{}, false
+	}
+	t, err := time.ParseInLocation(dateFormat, value, time.Local)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}
+
+// nextOccurrence returns the next calendar date for a recurrence, always landing
+// on or after today so a late completion does not leave a past due date.
+func nextOccurrence(base, recurrence string, interval int, unit string) string {
+	t, ok := parseDate(base)
+	if !ok {
+		t = time.Now()
+	}
+	if interval < 1 {
+		interval = 1
+	}
+	step := func(cur time.Time) time.Time {
+		switch recurrence {
+		case models.RecurrenceDaily:
+			return cur.AddDate(0, 0, 1)
+		case models.RecurrenceWeekly:
+			return cur.AddDate(0, 0, 7)
+		case models.RecurrenceMonthly:
+			return cur.AddDate(0, 1, 0)
+		case models.RecurrenceYearly:
+			return cur.AddDate(1, 0, 0)
+		case models.RecurrenceCustom:
+			switch unit {
+			case models.RecurUnitWeek:
+				return cur.AddDate(0, 0, 7*interval)
+			case models.RecurUnitMonth:
+				return cur.AddDate(0, interval, 0)
+			case models.RecurUnitYear:
+				return cur.AddDate(interval, 0, 0)
+			default:
+				return cur.AddDate(0, 0, interval)
+			}
+		default:
+			return cur
+		}
+	}
+
+	nowLocal := time.Now()
+	today := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, time.Local)
+	next := step(t)
+	for !next.After(today) {
+		next = step(next)
+	}
+	return next.Format(dateFormat)
+}
+
+// daysBetween returns whole days from a to b (b - a).
+func daysBetween(a, b string) int {
+	ta, ok1 := parseDate(a)
+	tb, ok2 := parseDate(b)
+	if !ok1 || !ok2 {
+		return 0
+	}
+	return int(tb.Sub(ta).Hours()/24 + 0.5)
+}
+
+// shiftDateTime moves a "2006-01-02T15:04" timestamp forward by whole days.
+func shiftDateTime(value string, days int) string {
+	t, err := time.ParseInLocation(reminderTimeFormat, value, time.Local)
+	if err != nil {
+		return value
+	}
+	return t.AddDate(0, 0, days).Format(reminderTimeFormat)
 }
 
 // ---------------------------------------------------------------------------

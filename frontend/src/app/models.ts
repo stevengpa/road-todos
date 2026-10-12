@@ -56,6 +56,52 @@ export function priorityMeta(p: string): PriorityMeta {
   return PRIORITY_META[(p as Priority) ?? 'medium'] ?? PRIORITY_META.medium;
 }
 
+export type Recurrence = '' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+export type RecurUnit = 'day' | 'week' | 'month' | 'year';
+
+export interface RecurrenceOption {
+  value: Recurrence;
+  label: string;
+}
+
+export const RECURRENCE_OPTIONS: RecurrenceOption[] = [
+  { value: '', label: 'Does not repeat' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+  { value: 'custom', label: 'Custom…' },
+];
+
+export const RECUR_UNITS: { value: RecurUnit; label: string }[] = [
+  { value: 'day', label: 'day(s)' },
+  { value: 'week', label: 'week(s)' },
+  { value: 'month', label: 'month(s)' },
+  { value: 'year', label: 'year(s)' },
+];
+
+/** Short human label for a card's recurrence, or '' when it does not repeat. */
+export function recurrenceLabel(recurrence: string, interval: number, unit: string): string {
+  switch (recurrence) {
+    case 'daily':
+      return 'Daily';
+    case 'weekly':
+      return 'Weekly';
+    case 'monthly':
+      return 'Monthly';
+    case 'yearly':
+      return 'Yearly';
+    case 'custom': {
+      const n = interval > 0 ? interval : 1;
+      const u =
+        unit === 'week' ? 'week' : unit === 'month' ? 'month' : unit === 'year' ? 'year' : 'day';
+      return `Every ${n} ${u}${n === 1 ? '' : 's'}`;
+    }
+    default:
+      return '';
+  }
+}
+
 export function parseTags(tags: string): string[] {
   return (tags || '')
     .split(',')

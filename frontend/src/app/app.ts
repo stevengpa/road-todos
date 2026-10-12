@@ -65,7 +65,7 @@ export class App implements OnInit, OnDestroy {
       const d = new Date(r.remindAt);
       return isNaN(d.getTime())
         ? 'Reminder'
-        : `Reminder · ${d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+        : `Reminder · ${d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
     }
     return r.overdue ? `Overdue · due ${r.dueDate}` : 'Due today';
   }

@@ -8,6 +8,10 @@ import {
   Column,
   PRIORITIES,
   Priority,
+  RECURRENCE_OPTIONS,
+  RECUR_UNITS,
+  Recurrence,
+  RecurUnit,
   priorityMeta,
 } from '../../models';
 
@@ -30,9 +34,15 @@ export class CardDialog implements OnInit {
   protected readonly priorities = PRIORITIES;
   protected readonly palette = BOARD_COLORS;
   protected readonly meta = priorityMeta;
+  protected readonly recurrenceOptions = RECURRENCE_OPTIONS;
+  protected readonly recurUnits = RECUR_UNITS;
 
   protected readonly confirming = signal(false);
   protected readonly editing = computed(() => this.card() != null);
+
+  protected isCustomRepeat(): boolean {
+    return this.recurrence === 'custom';
+  }
 
   protected title = '';
   protected description = '';
@@ -41,6 +51,9 @@ export class CardDialog implements OnInit {
   protected remindAt = '';
   protected tags = '';
   protected columnId = 0;
+  protected recurrence: Recurrence = '';
+  protected recurInterval = 1;
+  protected recurUnit: RecurUnit = 'day';
 
   ngOnInit(): void {
     const card = this.card();
@@ -52,6 +65,9 @@ export class CardDialog implements OnInit {
       this.remindAt = card.remindAt;
       this.tags = card.tags;
       this.columnId = card.columnId;
+      this.recurrence = (card.recurrence as Recurrence) ?? '';
+      this.recurInterval = card.recurInterval > 0 ? card.recurInterval : 1;
+      this.recurUnit = (card.recurUnit as RecurUnit) ?? 'day';
     } else {
       this.columnId = this.defaultColumnId() ?? this.columns()[0]?.id ?? 0;
     }
@@ -76,6 +92,7 @@ export class CardDialog implements OnInit {
       .filter(Boolean)
       .join(', ');
 
+    const custom = this.recurrence === 'custom';
     this.save.emit({
       id: this.card()?.id ?? 0,
       boardId: this.boardId(),
@@ -86,6 +103,9 @@ export class CardDialog implements OnInit {
       dueDate: this.dueDate,
       remindAt: this.remindAt,
       tags,
+      recurrence: this.recurrence,
+      recurInterval: custom ? Math.max(1, Number(this.recurInterval) || 1) : 1,
+      recurUnit: custom ? this.recurUnit : 'day',
     });
   }
 

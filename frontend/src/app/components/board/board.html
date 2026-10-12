@@ -164,7 +164,7 @@
                 @if (card.description) {
                   <p class="card-desc">{{ card.description }}</p>
                 }
-                @if (card.tags || card.dueDate || card.remindAt) {
+                @if (card.tags || card.dueDate || card.remindAt || card.recurrence) {
                   <div class="card-foot">
                     @for (t of tags(card.tags); track t) {
                       <span class="tag">{{ t }}</span>
@@ -185,6 +185,17 @@
                           <path d="M13.7 21a2 2 0 0 1-3.4 0" />
                         </svg>
                         {{ remindLabel(card.remindAt) }}
+                      </span>
+                    }
+                    @if (card.recurrence) {
+                      <span class="repeat" [title]="repeat(card.recurrence, card.recurInterval, card.recurUnit)">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m17 2 4 4-4 4" />
+                          <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                          <path d="m7 22-4-4 4-4" />
+                          <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                        </svg>
+                        {{ repeat(card.recurrence, card.recurInterval, card.recurUnit) }}
                       </span>
                     }
                   </div>
@@ -361,6 +372,17 @@
                       }
                     </span>
                     <span class="g-tags">
+                      @if (card.recurrence) {
+                        <span class="repeat" [title]="repeat(card.recurrence, card.recurInterval, card.recurUnit)">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m17 2 4 4-4 4" />
+                            <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                            <path d="m7 22-4-4 4-4" />
+                            <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                          </svg>
+                          {{ repeat(card.recurrence, card.recurInterval, card.recurUnit) }}
+                        </span>
+                      }
                       @for (t of tags(card.tags); track t) {
                         <span class="tag">{{ t }}</span>
                       }

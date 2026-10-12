@@ -65,6 +65,9 @@ export namespace models {
 	    dueDate: string;
 	    remindAt: string;
 	    tags: string;
+	    recurrence: string;
+	    recurInterval: number;
+	    recurUnit: string;
 	    position: number;
 	    createdAt: string;
 	    updatedAt: string;
@@ -85,6 +88,9 @@ export namespace models {
 	        this.dueDate = source["dueDate"];
 	        this.remindAt = source["remindAt"];
 	        this.tags = source["tags"];
+	        this.recurrence = source["recurrence"];
+	        this.recurInterval = source["recurInterval"];
+	        this.recurUnit = source["recurUnit"];
 	        this.position = source["position"];
 	        this.createdAt = source["createdAt"];
 	        this.updatedAt = source["updatedAt"];
@@ -100,6 +106,9 @@ export namespace models {
 	    dueDate: string;
 	    remindAt: string;
 	    tags: string;
+	    recurrence: string;
+	    recurInterval: number;
+	    recurUnit: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new CardInput(source);
@@ -116,6 +125,9 @@ export namespace models {
 	        this.dueDate = source["dueDate"];
 	        this.remindAt = source["remindAt"];
 	        this.tags = source["tags"];
+	        this.recurrence = source["recurrence"];
+	        this.recurInterval = source["recurInterval"];
+	        this.recurUnit = source["recurUnit"];
 	    }
 	}
 	export class Column {
