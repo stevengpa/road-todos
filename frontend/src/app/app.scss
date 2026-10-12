@@ -485,12 +485,17 @@
   margin-top: 1px;
   width: 24px;
   height: 24px;
+  padding: 0;
+  line-height: 0;
   display: grid;
   place-items: center;
   border-radius: 7px;
   border: 1px solid var(--border-strong);
   color: transparent;
   transition: 0.15s;
+}
+.si-check svg {
+  display: block;
 }
 .si-check:hover {
   color: var(--accent);
