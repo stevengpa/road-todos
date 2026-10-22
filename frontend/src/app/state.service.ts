@@ -15,6 +15,7 @@ import {
   SmartView,
   Snapshot,
   Theme,
+  User,
   View,
   dayKey,
   localDayKey,
@@ -32,6 +33,8 @@ const EMPTY_CARDS: Card[] = [];
 
 @Injectable({ providedIn: 'root' })
 export class StateService {
+  readonly user = signal<User | null>(null);
+  readonly authToken = signal<string>(localStorage.getItem('road-todo-token') || '');
   readonly boards = signal<Board[]>([]);
   readonly columns = signal<Column[]>([]);
   readonly cards = signal<Card[]>([]);
@@ -445,13 +448,14 @@ export class StateService {
   // -------------------------------------------------------------------------
 
   private async reload(): Promise<void> {
-    const snap: Snapshot = await App.GetSnapshot();
-    this.boards.set(snap.boards);
-    this.columns.set(snap.columns);
-    this.cards.set(snap.cards);
+    const snap: Snapshot = await App.GetSnapshot() as any;
+    this.user.set(snap.user || null);
+    this.boards.set(snap.boards || []);
+    this.columns.set(snap.columns || []);
+    this.cards.set(snap.cards || []);
     const id = this.currentBoardId();
-    if (id !== null && !snap.boards.some((b) => b.id === id)) {
-      this.currentBoardId.set(snap.boards.length ? snap.boards[0].id : null);
+    if (id !== null && !this.boards().some((b) => b.id === id)) {
+      this.currentBoardId.set(this.boards().length ? this.boards()[0].id : null);
     }
   }
 
@@ -482,5 +486,72 @@ export class StateService {
   private describe(err: unknown): string {
     if (err instanceof Error) return err.message;
     return String(err);
+  }
+
+  async register(username: string, password: string): Promise<boolean> {
+    try {
+      await App.RegisterUser(username, password);
+      return this.login(username, password);
+    } catch (err) {
+      this.error.set(this.describe(err));
+      setTimeout(() => this.error.set(null), 4000);
+      return false;
+    }
+  }
+
+  async login(username: string, password: string): Promise<boolean> {
+    try {
+      const res: any = await App.LoginUser(username, password);
+      const token = res?.token || res?.sessionId || res?.session?.id || res?.Token || '';
+      if (token) {
+        this.authToken.set(token);
+        localStorage.setItem('road-todo-token', token);
+      }
+      const user = res?.user || res?.User || (token ? await App.CurrentUser(token).catch(() => null) : null);
+      if (user) {
+        this.user.set(user);
+      }
+      await this.reload();
+      await this.refreshReminders();
+      const boards = this.boards();
+      if (boards.length && this.currentBoardId() === null) {
+        this.currentBoardId.set(boards[0].id);
+      }
+      if (!this.user()) {
+        // try to reload snapshot again
+        await this.reload();
+      }
+      return !!this.user();
+    } catch (err) {
+      this.error.set(this.describe(err));
+      setTimeout(() => this.error.set(null), 4000);
+      return false;
+    }
+  }
+
+  async logout(): Promise<void> {
+    const t = this.authToken();
+    if (t) {
+      try {
+        await App.LogoutUser(t);
+      } catch {}
+    }
+    this.authToken.set('');
+    localStorage.removeItem('road-todo-token');
+    this.user.set(null);
+    await this.reload();
+  }
+
+  async deleteAccount(): Promise<boolean> {
+    const t = this.authToken();
+    if (!t) return false;
+    const ok = await this.runVoid(() => App.DeleteAccount(t));
+    if (ok) {
+      this.authToken.set('');
+      localStorage.removeItem('road-todo-token');
+      this.user.set(null);
+      await this.reload();
+    }
+    return ok;
   }
 }

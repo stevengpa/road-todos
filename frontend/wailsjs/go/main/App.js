@@ -18,8 +18,16 @@ export function CreateColumn(arg1) {
   return window['go']['main']['App']['CreateColumn'](arg1);
 }
 
+export function CurrentUser(arg1) {
+  return window['go']['main']['App']['CurrentUser'](arg1);
+}
+
 export function DBPath() {
   return window['go']['main']['App']['DBPath']();
+}
+
+export function DeleteAccount(arg1) {
+  return window['go']['main']['App']['DeleteAccount'](arg1);
 }
 
 export function DeleteBoard(arg1) {
@@ -42,6 +50,14 @@ export function GetSnapshot() {
   return window['go']['main']['App']['GetSnapshot']();
 }
 
+export function LoginUser(arg1, arg2) {
+  return window['go']['main']['App']['LoginUser'](arg1, arg2);
+}
+
+export function LogoutUser(arg1) {
+  return window['go']['main']['App']['LogoutUser'](arg1);
+}
+
 export function MoveCard(arg1, arg2, arg3) {
   return window['go']['main']['App']['MoveCard'](arg1, arg2, arg3);
 }
@@ -52,6 +68,10 @@ export function OpenDBFolder() {
 
 export function PendingReminders() {
   return window['go']['main']['App']['PendingReminders']();
+}
+
+export function RegisterUser(arg1, arg2) {
+  return window['go']['main']['App']['RegisterUser'](arg1, arg2);
 }
 
 export function ReorderCards(arg1, arg2) {

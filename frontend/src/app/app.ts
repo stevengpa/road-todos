@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 import * as Runtime from '../../wailsjs/runtime/runtime';
 import { StateService } from './state.service';
@@ -38,7 +39,7 @@ import {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, Board, BoardDialog, Calendar, CardDialog],
+  imports: [CommonModule, FormsModule, Board, BoardDialog, Calendar, CardDialog],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +64,49 @@ export class App implements OnInit, OnDestroy {
   // and that board's stages, which may differ from the currently selected board.
   protected readonly cardDialogOpen = signal(false);
   protected readonly editingViewCard = signal<Card | null>(null);
+
+  protected readonly showAuth = computed(() => !this.state.user());
+  protected readonly authMode = signal<'login' | 'register'>('login');
+  protected readonly authUsername = signal('');
+  protected readonly authPassword = signal('');
+  protected readonly authBusy = signal(false);
+
+  protected async submitAuth(): Promise<void> {
+    const u = this.authUsername().trim();
+    const p = this.authPassword();
+    if (!u || !p) return;
+    this.authBusy.set(true);
+    try {
+      if (this.authMode() === 'register') {
+        const ok = await this.state.register(u, p);
+        if (ok) {
+          // logged in automatically
+        } else {
+          this.authMode.set('login');
+        }
+      } else {
+        await this.state.login(u, p);
+      }
+    } finally {
+      this.authBusy.set(false);
+    }
+  }
+
+  protected toggleAuthMode(): void {
+    this.authMode.set(this.authMode() === 'login' ? 'register' : 'login');
+    this.authPassword.set('');
+  }
+
+  protected async logout(): Promise<void> {
+    await this.state.logout();
+  }
+
+  protected async deleteAccount(): Promise<void> {
+    if (!confirm('Delete your account and all associated tasks/boards? This cannot be undone.')) {
+      return;
+    }
+    await this.state.deleteAccount();
+  }
 
   protected readonly viewCardColumns = computed<Column[]>(() => {
     const card = this.editingViewCard();

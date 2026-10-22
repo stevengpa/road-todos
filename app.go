@@ -42,6 +42,35 @@ func NewApp() (*App, error) {
 	return &App{db: sqlDB, store: st, done: make(chan struct{})}, nil
 }
 
+// Auth
+func (a *App) RegisterUser(username, password string) (models.User, error) {
+	return a.store.CreateUser(username, password)
+}
+
+func (a *App) LoginUser(username, password string) (map[string]interface{}, error) {
+	user, token, err := a.store.Login(username, password)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{"user": user, "token": token}, nil
+}
+
+func (a *App) LogoutUser(token string) error {
+	return a.store.Logout(token)
+}
+
+func (a *App) CurrentUser(token string) (*models.User, error) {
+	return a.store.GetUserBySession(token)
+}
+
+func (a *App) DeleteAccount(token string) error {
+	user, err := a.store.GetUserBySession(token)
+	if err != nil {
+		return err
+	}
+	return a.store.DeleteUser(user.ID)
+}
+
 // startup is called by Wails once the app is ready.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx

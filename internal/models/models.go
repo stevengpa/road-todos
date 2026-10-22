@@ -1,8 +1,31 @@
 package models
 
+// User represents an authenticated user.
+type User struct {
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+// UserCredentials carries login/registration input.
+type UserCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// Session represents an auth session.
+type Session struct {
+	ID        string `json:"id"`
+	UserID    int64  `json:"userId"`
+	ExpiresAt string `json:"expiresAt"`
+	CreatedAt string `json:"createdAt"`
+}
+
 // Board is a roadmap board that groups columns and cards.
 type Board struct {
 	ID          int64  `json:"id"`
+	UserID      int64  `json:"userId"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Color       string `json:"color"`
@@ -25,6 +48,7 @@ type Card struct {
 	ID            int64  `json:"id"`
 	BoardID       int64  `json:"boardId"`
 	ColumnID      int64  `json:"columnId"`
+	UserID        int64  `json:"userId"`
 	Title         string `json:"title"`
 	Description   string `json:"description"`
 	Priority      string `json:"priority"`
@@ -122,9 +146,10 @@ type ColumnInput struct {
 
 // Snapshot is the full in-memory state of the workspace.
 type Snapshot struct {
-	Boards  []Board  `json:"boards"`
-	Columns []Column `json:"columns"`
-	Cards   []Card   `json:"cards"`
+	User    *User     `json:"user"`
+	Boards  []Board   `json:"boards"`
+	Columns []Column  `json:"columns"`
+	Cards   []Card    `json:"cards"`
 }
 
 // Settings holds the user's persisted UI preferences.

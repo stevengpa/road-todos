@@ -1,4 +1,28 @@
-<div class="app">
+<div class="auth-gate" *ngIf="showAuth()">
+  <div class="auth-card">
+    <h1>Road ToDos</h1>
+    <p class="auth-subtitle">{{ authMode() === 'login' ? 'Sign in' : 'Create account' }}</p>
+    <form (ngSubmit)="submitAuth()">
+      <label class="field">
+        <span>Username</span>
+        <input [(ngModel)]="authUsername" name="username" autocomplete="username" required />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input [(ngModel)]="authPassword" name="password" type="password" autocomplete="new-password" required />
+      </label>
+      @if (authMode() === 'register') {
+        <p class="auth-hint">Password must be at least 8 characters and include uppercase, lowercase, and a number.</p>
+      }
+      <button class="primary" type="submit" [disabled]="authBusy()">{{ authMode() === 'login' ? 'Login' : 'Create account' }}</button>
+    </form>
+    <button class="link" type="button" (click)="toggleAuthMode()">
+      {{ authMode() === 'login' ? "Don't have an account? Create one" : 'Already have an account? Sign in' }}
+    </button>
+  </div>
+</div>
+
+<div class="app" *ngIf="!showAuth()">
   <aside class="sidebar" [class.collapsed]="collapsed()">
     <div class="sidebar-inner">
       <div class="brand">
@@ -82,6 +106,19 @@
         </svg>
         <span>Open data folder</span>
       </button>
+
+      <section class="sidebar-section">
+        <div class="sidebar-section-header">
+          <span>App Settings</span>
+        </div>
+        <div class="sidebar-list">
+          <div class="sidebar-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+            <div style="font-size: 12px; color: var(--text-secondary);">Signed in as {{ state.user()?.username }}</div>
+            <button class="ghost" type="button" (click)="logout()">Sign out</button>
+            <button class="danger" type="button" (click)="deleteAccount()">Delete account and all tasks</button>
+          </div>
+        </div>
+      </section>
     </div>
   </aside>
 

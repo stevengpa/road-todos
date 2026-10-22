@@ -10,7 +10,11 @@ export function CreateCard(arg1:models.CardInput):Promise<models.Card>;
 
 export function CreateColumn(arg1:models.ColumnInput):Promise<models.Column>;
 
+export function CurrentUser(arg1:string):Promise<models.User>;
+
 export function DBPath():Promise<string>;
+
+export function DeleteAccount(arg1:string):Promise<void>;
 
 export function DeleteBoard(arg1:number):Promise<void>;
 
@@ -22,11 +26,17 @@ export function GetSettings():Promise<models.Settings>;
 
 export function GetSnapshot():Promise<models.Snapshot>;
 
+export function LoginUser(arg1:string,arg2:string):Promise<Record<string, any>>;
+
+export function LogoutUser(arg1:string):Promise<void>;
+
 export function MoveCard(arg1:number,arg2:number,arg3:number):Promise<void>;
 
 export function OpenDBFolder():Promise<void>;
 
 export function PendingReminders():Promise<Array<models.Reminder>>;
+
+export function RegisterUser(arg1:string,arg2:string):Promise<models.User>;
 
 export function ReorderCards(arg1:number,arg2:Array<number>):Promise<void>;
 

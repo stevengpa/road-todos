@@ -2,6 +2,7 @@ export namespace models {
 	
 	export class Board {
 	    id: number;
+	    userId: number;
 	    name: string;
 	    description: string;
 	    color: string;
@@ -15,6 +16,7 @@ export namespace models {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
+	        this.userId = source["userId"];
 	        this.name = source["name"];
 	        this.description = source["description"];
 	        this.color = source["color"];
@@ -58,6 +60,7 @@ export namespace models {
 	    id: number;
 	    boardId: number;
 	    columnId: number;
+	    userId: number;
 	    title: string;
 	    description: string;
 	    priority: string;
@@ -82,6 +85,7 @@ export namespace models {
 	        this.id = source["id"];
 	        this.boardId = source["boardId"];
 	        this.columnId = source["columnId"];
+	        this.userId = source["userId"];
 	        this.title = source["title"];
 	        this.description = source["description"];
 	        this.priority = source["priority"];
@@ -214,7 +218,26 @@ export namespace models {
 	        this.showCompleted = source["showCompleted"];
 	    }
 	}
+	export class User {
+	    id: number;
+	    username: string;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new User(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.username = source["username"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
 	export class Snapshot {
+	    user?: User;
 	    boards: Board[];
 	    columns: Column[];
 	    cards: Card[];
@@ -225,6 +248,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.user = this.convertValues(source["user"], User);
 	        this.boards = this.convertValues(source["boards"], Board);
 	        this.columns = this.convertValues(source["columns"], Column);
 	        this.cards = this.convertValues(source["cards"], Card);

@@ -59,66 +59,88 @@ func Open() (*sql.DB, error) {
 
 func migrate(sqlDB *sql.DB) error {
 	schema := `
+CREATE TABLE IF NOT EXISTS users (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username TEXT NOT NULL UNIQUE,
+	password_hash TEXT NOT NULL,
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS boards (
-	id          INTEGER PRIMARY KEY AUTOINCREMENT,
-	name        TEXT NOT NULL,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+	name TEXT NOT NULL,
 	description TEXT NOT NULL DEFAULT '',
-	color       TEXT NOT NULL DEFAULT '#6366f1',
-	created_at  TEXT NOT NULL,
-	updated_at  TEXT NOT NULL
+	color TEXT NOT NULL DEFAULT '#6366f1',
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS columns (
-	id         INTEGER PRIMARY KEY AUTOINCREMENT,
-	board_id   INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
-	name       TEXT NOT NULL,
-	color      TEXT NOT NULL DEFAULT '#64748b',
-	position   INTEGER NOT NULL DEFAULT 0,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+	name TEXT NOT NULL,
+	color TEXT NOT NULL DEFAULT '#64748b',
+	position INTEGER NOT NULL DEFAULT 0,
 	created_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS cards (
-	id              INTEGER PRIMARY KEY AUTOINCREMENT,
-	board_id        INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
-	column_id       INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
-	title           TEXT NOT NULL,
-	description     TEXT NOT NULL DEFAULT '',
-	priority        TEXT NOT NULL DEFAULT 'medium',
-	completed       INTEGER NOT NULL DEFAULT 0,
-	due_date        TEXT NOT NULL DEFAULT '',
-	remind_at       TEXT NOT NULL DEFAULT '',
-	remind_before   INTEGER NOT NULL DEFAULT 0,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+	column_id INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
+	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+	title TEXT NOT NULL,
+	description TEXT NOT NULL DEFAULT '',
+	priority TEXT NOT NULL DEFAULT 'medium',
+	completed INTEGER NOT NULL DEFAULT 0,
+	due_date TEXT NOT NULL DEFAULT '',
+	remind_at TEXT NOT NULL DEFAULT '',
+	remind_before INTEGER NOT NULL DEFAULT 0,
 	remind_notified TEXT NOT NULL DEFAULT '',
-	due_notified    TEXT NOT NULL DEFAULT '',
-	tags            TEXT NOT NULL DEFAULT '',
-	recurrence      TEXT NOT NULL DEFAULT '',
-	recur_interval  INTEGER NOT NULL DEFAULT 1,
-	recur_unit      TEXT NOT NULL DEFAULT 'day',
-	position        INTEGER NOT NULL DEFAULT 0,
-	created_at      TEXT NOT NULL,
-	updated_at      TEXT NOT NULL
+	due_notified TEXT NOT NULL DEFAULT '',
+	tags TEXT NOT NULL DEFAULT '',
+	recurrence TEXT NOT NULL DEFAULT '',
+	recur_interval INTEGER NOT NULL DEFAULT 1,
+	recur_unit TEXT NOT NULL DEFAULT 'day',
+	position INTEGER NOT NULL DEFAULT 0,
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS settings (
-	key   TEXT PRIMARY KEY,
-	value TEXT NOT NULL
+	user_id INTEGER,
+	key TEXT NOT NULL,
+	value TEXT NOT NULL,
+	PRIMARY KEY (user_id, key)
 );
 
 CREATE TABLE IF NOT EXISTS board_settings (
 	board_id INTEGER PRIMARY KEY REFERENCES boards(id) ON DELETE CASCADE,
-	view     TEXT NOT NULL DEFAULT 'kanban'
+	view TEXT NOT NULL DEFAULT 'kanban'
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+	id TEXT PRIMARY KEY,
+	user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	expires_at TEXT NOT NULL,
+	created_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_columns_board ON columns(board_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_column ON cards(column_id, position);
 CREATE INDEX IF NOT EXISTS idx_cards_board ON cards(board_id);
+CREATE INDEX IF NOT EXISTS idx_cards_user ON cards(user_id);
+CREATE INDEX IF NOT EXISTS idx_boards_user ON boards(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 `
 	if _, err := sqlDB.Exec(schema); err != nil {
 		return err
 	}
 
-	// Incremental migrations so databases created by earlier versions keep
-	// working when new columns are introduced.
+	// Incremental migrations
 	columns := []struct{ table, column, ddl string }{
 		{"cards", "remind_at", `ALTER TABLE cards ADD COLUMN remind_at TEXT NOT NULL DEFAULT ''`},
 		{"cards", "remind_before", `ALTER TABLE cards ADD COLUMN remind_before INTEGER NOT NULL DEFAULT 0`},
@@ -127,6 +149,8 @@ CREATE INDEX IF NOT EXISTS idx_cards_board ON cards(board_id);
 		{"cards", "recurrence", `ALTER TABLE cards ADD COLUMN recurrence TEXT NOT NULL DEFAULT ''`},
 		{"cards", "recur_interval", `ALTER TABLE cards ADD COLUMN recur_interval INTEGER NOT NULL DEFAULT 1`},
 		{"cards", "recur_unit", `ALTER TABLE cards ADD COLUMN recur_unit TEXT NOT NULL DEFAULT 'day'`},
+		{"boards", "user_id", `ALTER TABLE boards ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`},
+		{"cards", "user_id", `ALTER TABLE cards ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`},
 	}
 	for _, c := range columns {
 		exists, err := columnExists(sqlDB, c.table, c.column)
