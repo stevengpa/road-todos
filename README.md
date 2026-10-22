@@ -4,31 +4,25 @@
 
 **A local-first roadmap & todo board for your desktop.**
 
-Plan work on a Kanban board, keep an eye on what's due with smart views and a
-calendar, and let recurring tasks take care of themselves. No accounts, no
-network, no cloud — everything lives in a single SQLite file on your machine.
+Plan work on a Kanban board, keep an eye on what's due with smart views and a calendar,
+and let recurring tasks take care of themselves. No accounts, no network, no cloud —
+everything lives in a single SQLite file on your machine.
 
-<sub>Go · Wails v2 · Angular 20 · SQLite — for macOS and Fedora</sub>
+<sub>Go · Wails v2 · Angular 20 · SQLite — for macOS, Windows & Linux</sub>
 
 <br />
 
-<img src="docs/screenshots/board.png" alt="Road ToDos — Kanban board with the sidebar, calendar and smart views" width="880" />
+<picture>
+  <source srcset="docs/screenshots/Road%20ToDo%20Dark%20mode.png" media="(prefers-color-scheme: dark)">
+  <img src="docs/screenshots/Road%20ToDo%20Light%20mode.png" alt="Road ToDos — Kanban board with sidebar, calendar, smart views and drag & drop" width="95%">
+</picture>
+
+<br />
+
+<a href="docs/screenshots/Road%20ToDo%20Dark%20mode.png"><img src="docs/screenshots/Road%20ToDo%20Dark%20mode.png" alt="Road ToDos dark mode" width="48%"></a>
+<a href="docs/screenshots/Road%20ToDo%20Light%20mode.png"><img src="docs/screenshots/Road%20ToDo%20Light%20mode.png" alt="Road ToDos light mode" width="48%"></a>
 
 </div>
-
----
-
-## What it looks like
-
-<p align="center">
-  <img src="docs/screenshots/views.png" alt="Smart views and the calendar day agenda" width="49%" />
-  &nbsp;
-  <img src="docs/screenshots/task-dialog.png" alt="Editing a task with priority, due date, reminders and recurrence" width="49%" />
-</p>
-
-<p align="center">
-  <sub>Left: the sidebar with the calendar, smart views and boards. Right: the task editor with due date, reminder and repeat.</sub>
-</p>
 
 ## Features
 
